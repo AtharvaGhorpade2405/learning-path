@@ -107,7 +107,11 @@ const Roadmap = () => {
 
   return (
     <div className="min-h-screen bg-surface overflow-hidden">
-      {showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} />}
+      {showConfetti && (
+        <div className="fixed inset-0 z-50 pointer-events-none">
+          <Confetti width={width} height={height} recycle={false} numberOfPieces={500} />
+        </div>
+      )}
       <Navbar />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 relative">
@@ -168,7 +172,7 @@ const Roadmap = () => {
           {/* Nodes grouped by Day */}
           <div className="relative py-6">
             {/* Central path line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 bg-gradient-to-b from-primary via-primary-light to-secondary rounded-full opacity-20"></div>
+          <div className="absolute left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 bg-gradient-to-b from-primary via-primary-light to-secondary rounded-full opacity-20 z-0"></div>
 
             {(() => {
               let globalIndex = 0;

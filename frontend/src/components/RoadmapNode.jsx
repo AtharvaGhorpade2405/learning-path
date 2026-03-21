@@ -45,7 +45,7 @@ const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLa
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {/* Step indicator */}
-        <div className={`absolute top-1/2 -translate-y-1/2 ${isLeft ? '-left-6 sm:-left-10' : '-right-6 sm:-right-10'} z-10`}>
+        <div className={`absolute top-1/2 -translate-y-1/2 ${isLeft ? '-left-6 sm:-left-10' : '-right-6 sm:-right-10'} z-20 bg-surface rounded-full`}>
           <div
             className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold border-4 transition-all duration-300 ${
               lesson.completed
@@ -59,9 +59,9 @@ const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLa
 
         {/* Card */}
         <div
-          className={`rounded-2xl p-5 border-2 transition-all duration-300 ${
+          className={`relative z-10 rounded-2xl p-5 border-2 transition-all duration-300 ${
             lesson.completed
-              ? 'bg-success/5 border-success/20 hover:border-success/40'
+              ? 'bg-white border-success/40 shadow-[0_0_15px_rgba(0,184,148,0.1)] hover:border-success/60'
               : 'bg-white border-surface-dark hover:border-primary/30 hover:shadow-lg'
           } ${isExpanded ? 'shadow-xl' : 'shadow-md'}`}
         >
