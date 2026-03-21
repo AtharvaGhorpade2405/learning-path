@@ -6,6 +6,8 @@ import Navbar from '../components/Navbar';
 import ProgressBar from '../components/ProgressBar';
 import SkillSwitcher from '../components/SkillSwitcher';
 import RoadmapNode from '../components/RoadmapNode';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 
 const Roadmap = () => {
   const { id } = useParams();
@@ -13,6 +15,8 @@ const Roadmap = () => {
   const [allPaths, setAllPaths] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { width, height } = useWindowSize();
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,6 +38,14 @@ const Roadmap = () => {
   }, [id]);
 
   const handleToggle = (updatedPath) => {
+    // Check if it just became completed
+    const wasComplete = path.roadmap?.length > 0 && path.roadmap.every(d => d.lessons.length > 0 && d.lessons.every(l => l.completed));
+    const isNowComplete = updatedPath.roadmap?.length > 0 && updatedPath.roadmap.every(d => d.lessons.length > 0 && d.lessons.every(l => l.completed));
+    if (!wasComplete && isNowComplete) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 8000);
+    }
+
     setPath(updatedPath);
     // Also update in allPaths for the switcher
     setAllPaths((prev) =>
@@ -82,9 +94,10 @@ const Roadmap = () => {
     );
   }
 
-  const completed = path.steps.filter((s) => s.completed).length;
-  const total = path.steps.length;
-  const isComplete = completed === total;
+  const total = path.roadmap?.length || 0;
+  const completed = path.roadmap ? path.roadmap.filter(d => d.lessons.length > 0 && d.lessons.every(l => l.completed)).length : 0;
+  const isComplete = total > 0 && completed === total;
+  const totalLessons = path.roadmap?.reduce((acc, d) => acc + d.lessons.length, 0) || 0;
 
   const levelLabels = {
     beginner: '🌱 Beginner',
@@ -93,10 +106,11 @@ const Roadmap = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface overflow-hidden">
+      {showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} />}
       <Navbar />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 relative">
         {/* Skill Switcher */}
         {allPaths.length > 1 && (
           <div className="mb-6">
@@ -125,7 +139,7 @@ const Roadmap = () => {
                 <span className="text-surface-dark">·</span>
                 <span className="text-sm text-dark-light">📅 {path.days} day plan</span>
                 <span className="text-surface-dark">·</span>
-                <span className="text-sm text-dark-light">{total} steps</span>
+                <span className="text-sm text-dark-light">{totalLessons} lessons</span>
               </div>
             </div>
             <button
@@ -151,21 +165,54 @@ const Roadmap = () => {
 
         {/* Roadmap Path */}
         <div className="relative">
-          {/* Central path line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 bg-gradient-to-b from-primary via-primary-light to-secondary rounded-full opacity-20"></div>
+          {/* Nodes grouped by Day */}
+          <div className="relative py-6">
+            {/* Central path line */}
+            <div className="absolute left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 bg-gradient-to-b from-primary via-primary-light to-secondary rounded-full opacity-20"></div>
 
-          {/* Nodes */}
-          <div className="relative space-y-10 py-6">
-            {path.steps.map((step, index) => (
-              <RoadmapNode
-                key={index}
-                step={step}
-                index={index}
-                totalSteps={total}
-                pathId={path._id}
-                onToggle={handleToggle}
-              />
-            ))}
+            {(() => {
+              let globalIndex = 0;
+              return path.roadmap?.map((dayObj, dayIndex) => {
+                const isDayComplete = dayObj.lessons.length > 0 && dayObj.lessons.every(l => l.completed);
+                
+                return (
+                  <div key={dayIndex} className="mb-16 relative">
+                    {/* Day Header */}
+                    <div className="flex justify-center mb-8 relative z-10">
+                      <div className={`px-6 py-2 rounded-full border-2 font-bold shadow-sm transition-colors duration-500 ${
+                        isDayComplete 
+                        ? 'bg-success/10 border-success/30 text-success' 
+                        : 'bg-white border-surface-dark text-dark-light'
+                      }`}>
+                        Day {dayObj.day}
+                      </div>
+                    </div>
+                    
+                    {/* Lessons in Day */}
+                    <div className="space-y-10">
+                      {dayObj.lessons.map((lesson, lessonIndex) => {
+                        const isFirst = dayIndex === 0 && lessonIndex === 0;
+                        const isLast = dayIndex === path.roadmap.length - 1 && lessonIndex === dayObj.lessons.length - 1;
+                        
+                        return (
+                          <RoadmapNode
+                            key={`${dayIndex}-${lessonIndex}`}
+                            lesson={lesson}
+                            dayIndex={dayIndex}
+                            lessonIndex={lessonIndex}
+                            globalIndex={globalIndex++}
+                            isFirst={isFirst}
+                            isLast={isLast}
+                            pathId={path._id}
+                            onToggle={handleToggle}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
 
           {/* End marker */}

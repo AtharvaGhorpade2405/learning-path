@@ -12,7 +12,7 @@ const ProgressBar = ({ completed, total, size = 'md', showLabel = true }) => {
       {showLabel && (
         <div className="flex justify-between items-center mb-1.5">
           <span className="text-xs font-semibold text-dark-light">
-            {completed}/{total} steps
+            {completed}/{total} days
           </span>
           <span className="text-xs font-bold text-primary">{percentage}%</span>
         </div>

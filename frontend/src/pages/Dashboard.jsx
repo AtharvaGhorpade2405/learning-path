@@ -30,8 +30,12 @@ const Dashboard = () => {
     setPaths((prev) => [newPath, ...prev]);
   };
 
-  const totalSteps = paths.reduce((sum, p) => sum + p.steps.length, 0);
-  const completedSteps = paths.reduce((sum, p) => sum + p.steps.filter((s) => s.completed).length, 0);
+  const totalDays = paths.reduce((sum, p) => sum + (p.roadmap?.length || 0), 0);
+  const completedDays = paths.reduce((sum, p) => {
+    if (!p.roadmap) return sum;
+    const completedInPath = p.roadmap.filter(day => day.lessons.length > 0 && day.lessons.every(l => l.completed)).length;
+    return sum + completedInPath;
+  }, 0);
 
   return (
     <div className="min-h-screen bg-surface">
@@ -55,9 +59,9 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             {[
               { label: 'Active Skills', value: paths.length, emoji: '📚', color: 'bg-primary/10 text-primary' },
-              { label: 'Total Steps', value: totalSteps, emoji: '🎯', color: 'bg-secondary/10 text-secondary-dark' },
-              { label: 'Completed', value: completedSteps, emoji: '✅', color: 'bg-success/10 text-success' },
-              { label: 'Progress', value: totalSteps > 0 ? `${Math.round((completedSteps / totalSteps) * 100)}%` : '0%', emoji: '🔥', color: 'bg-accent/10 text-accent' },
+              { label: 'Total Days', value: totalDays, emoji: '🎯', color: 'bg-secondary/10 text-secondary-dark' },
+              { label: 'Completed', value: completedDays, emoji: '✅', color: 'bg-success/10 text-success' },
+              { label: 'Progress', value: totalDays > 0 ? `${Math.round((completedDays / totalDays) * 100)}%` : '0%', emoji: '🔥', color: 'bg-accent/10 text-accent' },
             ].map((stat) => (
               <div key={stat.label} className="bg-card rounded-2xl p-4 border border-surface-dark/30">
                 <div className="flex items-center gap-2 mb-1">

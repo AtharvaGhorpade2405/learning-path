@@ -9,8 +9,8 @@ const SkillSwitcher = ({ paths }) => {
     <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
       {paths.map((path) => {
         const isActive = path._id === currentId;
-        const completed = path.steps.filter((s) => s.completed).length;
-        const total = path.steps.length;
+        const total = path.roadmap?.length || 0;
+        const completed = path.roadmap ? path.roadmap.filter(d => d.lessons.length > 0 && d.lessons.every(l => l.completed)).length : 0;
         const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
         return (

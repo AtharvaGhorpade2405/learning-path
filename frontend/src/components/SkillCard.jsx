@@ -14,9 +14,9 @@ const levelColors = {
 };
 
 const SkillCard = ({ path }) => {
-  const completed = path.steps.filter((s) => s.completed).length;
-  const total = path.steps.length;
-  const isComplete = completed === total;
+  const total = path.roadmap?.length || 0;
+  const completed = path.roadmap ? path.roadmap.filter(d => d.lessons.length > 0 && d.lessons.every(l => l.completed)).length : 0;
+  const isComplete = total > 0 && completed === total;
 
   return (
     <Link
