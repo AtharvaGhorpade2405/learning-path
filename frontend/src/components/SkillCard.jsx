@@ -1,18 +1,6 @@
 import { Link } from 'react-router-dom';
 import ProgressBar from './ProgressBar';
 
-const levelEmojis = {
-  beginner: '🌱',
-  intermediate: '🌿',
-  advanced: '🌳',
-};
-
-const levelColors = {
-  beginner: 'bg-green-100 text-green-700',
-  intermediate: 'bg-blue-100 text-blue-700',
-  advanced: 'bg-purple-100 text-purple-700',
-};
-
 const SkillCard = ({ path }) => {
   const total = path.roadmap?.length || 0;
   const completed = path.roadmap ? path.roadmap.filter(d => d.lessons.length > 0 && d.lessons.every(l => l.completed)).length : 0;
@@ -34,15 +22,12 @@ const SkillCard = ({ path }) => {
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
               isComplete ? 'bg-success/10' : 'bg-primary/10'
             } group-hover:scale-110 transition-transform duration-300`}>
-              {isComplete ? '🏆' : levelEmojis[path.level] || '📚'}
+              {isComplete ? '🏆' : '📚'}
             </div>
             <div>
               <h3 className="font-bold text-dark text-lg leading-tight group-hover:text-primary transition-colors">
                 {path.topic}
               </h3>
-              <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${levelColors[path.level]}`}>
-                {path.level}
-              </span>
             </div>
           </div>
           {isComplete && (

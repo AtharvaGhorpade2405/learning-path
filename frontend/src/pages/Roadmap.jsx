@@ -99,12 +99,6 @@ const Roadmap = () => {
   const isComplete = total > 0 && completed === total;
   const totalLessons = path.roadmap?.reduce((acc, d) => acc + d.lessons.length, 0) || 0;
 
-  const levelLabels = {
-    beginner: '🌱 Beginner',
-    intermediate: '🌿 Intermediate',
-    advanced: '🌳 Advanced',
-  };
-
   return (
     <div className="min-h-screen bg-surface overflow-hidden">
       {showConfetti && (
@@ -139,8 +133,6 @@ const Roadmap = () => {
                 {path.topic}
               </h1>
               <div className="flex items-center gap-3 mt-2 flex-wrap">
-                <span className="text-sm text-dark-light">{levelLabels[path.level]}</span>
-                <span className="text-surface-dark">·</span>
                 <span className="text-sm text-dark-light">📅 {path.days} day plan</span>
                 <span className="text-surface-dark">·</span>
                 <span className="text-sm text-dark-light">{totalLessons} lessons</span>

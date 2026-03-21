@@ -12,13 +12,15 @@ function getGroq() {
 // @route   POST /api/paths/generate
 const generatePath = async (req, res) => {
   try {
-    const { topic, level, days } = req.body;
+    const { topic, currentKnowledge, days } = req.body;
 
     const systemPrompt = `You are an expert curriculum designer. Create a detailed, step-by-step learning roadmap grouped by days.
 
 The user wants to learn: "${topic}"
-Their current level: "${level}"
+Their current knowledge context: "${currentKnowledge}"
 Available timeframe: ${days} day(s)
+
+Carefully read their current knowledge context. Adapt the roadmap STRICTLY based on what they already know (skip basics if they already know them, or start from scratch if they are a complete beginner).
 
 Generate a structured learning path spanning exactly ${days} day(s). The roadmap must be an array of Day objects.
 
@@ -60,7 +62,7 @@ Example output format:
         { role: 'system', content: systemPrompt },
         {
           role: 'user',
-          content: `Generate a ${level}-level learning path for "${topic}" that can be completed in ${days} days. Return ONLY valid JSON.`,
+          content: `Generate a custom learning path for "${topic}" based on this context: "${currentKnowledge}". It must span exactly ${days} days. Return ONLY valid JSON.`,
         },
       ],
       model: 'openai/gpt-oss-20b',
@@ -107,7 +109,7 @@ Example output format:
     const learningPath = await LearningPath.create({
       user: req.user._id,
       topic,
-      level,
+      currentKnowledge,
       days,
       roadmap: validation.data.map((dayObj) => ({
         day: dayObj.day,

@@ -5,7 +5,7 @@ import api from '../utils/api';
 
 const NewSkillModal = ({ isOpen, onClose, onCreated }) => {
   const [topic, setTopic] = useState('');
-  const [level, setLevel] = useState('beginner');
+  const [currentKnowledge, setCurrentKnowledge] = useState('');
   const [days, setDays] = useState(14);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -18,12 +18,12 @@ const NewSkillModal = ({ isOpen, onClose, onCreated }) => {
     try {
       const { data } = await api.post('/paths/generate', {
         topic: topic.trim(),
-        level,
+        currentKnowledge: currentKnowledge.trim(),
         days: Number(days),
       });
       toast.success(`Learning path for "${topic}" created! 🎯`);
       setTopic('');
-      setLevel('beginner');
+      setCurrentKnowledge('');
       setDays(14);
       onClose();
       if (onCreated) onCreated(data);
@@ -84,34 +84,19 @@ const NewSkillModal = ({ isOpen, onClose, onCreated }) => {
               />
             </div>
 
-            {/* Level */}
+            {/* Knowledge Context */}
             <div>
               <label className="block text-sm font-semibold text-dark mb-2">
-                Your current level
+                What do you already know about this topic?
               </label>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: 'beginner', label: '🌱 Beginner', desc: "I'm new" },
-                  { value: 'intermediate', label: '🌿 Intermediate', desc: 'Some experience' },
-                  { value: 'advanced', label: '🌳 Advanced', desc: 'Deep dive' },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setLevel(opt.value)}
-                    disabled={isLoading}
-                    className={`p-3 rounded-xl border-2 text-center transition-all duration-200 cursor-pointer ${
-                      level === opt.value
-                        ? 'border-primary bg-primary/10 shadow-md'
-                        : 'border-surface-dark bg-surface hover:border-primary/30'
-                    }`}
-                  >
-                    <div className="text-lg">{opt.label.split(' ')[0]}</div>
-                    <div className="text-xs font-semibold text-dark mt-1">{opt.label.split(' ').slice(1).join(' ')}</div>
-                    <div className="text-[10px] text-dark-light">{opt.desc}</div>
-                  </button>
-                ))}
-              </div>
+              <textarea
+                value={currentKnowledge}
+                onChange={(e) => setCurrentKnowledge(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 border-surface-dark bg-surface focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none transition-all duration-200 text-dark placeholder-dark-light/50 resize-none h-24"
+                placeholder="e.g., I know the basics of HTML but struggling with CSS padding..."
+                required
+                disabled={isLoading}
+              />
             </div>
 
             {/* Days */}

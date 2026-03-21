@@ -6,10 +6,11 @@ const generatePathSchema = z.object({
     .min(2, 'Topic must be at least 2 characters')
     .max(100, 'Topic must be at most 100 characters')
     .trim(),
-  level: z.enum(['beginner', 'intermediate', 'advanced'], {
-    required_error: 'Level is required',
-    invalid_type_error: 'Level must be beginner, intermediate, or advanced',
-  }),
+  currentKnowledge: z
+    .string({ required_error: 'Current knowledge is required' })
+    .min(2, 'Please provide a bit of context')
+    .max(1000, 'Please keep it under 1000 characters')
+    .trim(),
   days: z
     .number({ required_error: 'Days is required', invalid_type_error: 'Days must be a number' })
     .int('Days must be a whole number')

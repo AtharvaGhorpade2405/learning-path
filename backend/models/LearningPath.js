@@ -45,10 +45,10 @@ const learningPathSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    level: {
+    currentKnowledge: {
       type: String,
       required: true,
-      enum: ['beginner', 'intermediate', 'advanced'],
+      trim: true,
     },
     days: {
       type: Number,
