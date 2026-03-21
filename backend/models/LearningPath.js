@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
-const stepSchema = new mongoose.Schema({
+const resourceSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  url: { type: String, required: true },
+});
+
+const lessonSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
@@ -9,14 +14,19 @@ const stepSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  resources: {
-    type: [String],
-    default: [],
-  },
+  resources: [resourceSchema],
   completed: {
     type: Boolean,
     default: false,
   },
+});
+
+const daySchema = new mongoose.Schema({
+  day: {
+    type: Number,
+    required: true,
+  },
+  lessons: [lessonSchema],
 });
 
 const learningPathSchema = new mongoose.Schema(
@@ -41,8 +51,9 @@ const learningPathSchema = new mongoose.Schema(
       required: true,
       min: 1,
     },
-    steps: [stepSchema],
+    roadmap: [daySchema],
   },
+
   { timestamps: true }
 );
 

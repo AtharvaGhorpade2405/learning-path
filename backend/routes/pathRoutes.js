@@ -3,7 +3,7 @@ const {
   generatePath,
   getUserPaths,
   getPathById,
-  toggleStepComplete,
+  toggleLessonComplete,
   deletePath,
 } = require('../controllers/pathController');
 const validate = require('../middleware/validate');
@@ -18,7 +18,7 @@ router.use(auth);
 router.post('/generate', validate(generatePathSchema), generatePath);
 router.get('/', getUserPaths);
 router.get('/:id', getPathById);
-router.patch('/:id/steps/:stepIndex', toggleStepComplete);
+router.patch('/:id/days/:dayIndex/lessons/:lessonIndex', toggleLessonComplete);
 router.delete('/:id', deletePath);
 
 module.exports = router;

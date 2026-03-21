@@ -20,10 +20,20 @@ const generatePathSchema = z.object({
 // Schema to validate the structured output from the LLM
 const llmOutputSchema = z.array(
   z.object({
-    title: z.string().min(1),
-    description: z.string().min(1),
-    resources: z.array(z.string()).min(1).max(2),
+    day: z.number(),
+    lessons: z.array(
+      z.object({
+        title: z.string().min(1),
+        description: z.string().min(1),
+        resources: z.array(
+          z.object({
+            title: z.string().min(1),
+            url: z.string().url().min(1),
+          })
+        ).min(1).max(3),
+      })
+    ).min(1),
   })
-).min(1, 'At least one step is required');
+).min(1, 'At least one day is required');
 
 module.exports = { generatePathSchema, llmOutputSchema };

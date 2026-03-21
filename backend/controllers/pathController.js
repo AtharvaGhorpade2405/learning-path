@@ -14,27 +14,42 @@ const generatePath = async (req, res) => {
   try {
     const { topic, level, days } = req.body;
 
-    const systemPrompt = `You are an expert curriculum designer. Create a detailed, step-by-step learning roadmap.
+    const systemPrompt = `You are an expert curriculum designer. Create a detailed, step-by-step learning roadmap grouped by days.
 
 The user wants to learn: "${topic}"
 Their current level: "${level}"
 Available timeframe: ${days} day(s)
 
-Generate a structured learning path with an appropriate number of steps (between 5 and ${Math.min(days, 20)} steps, scaling with the timeframe).
+Generate a structured learning path spanning exactly ${days} day(s). The roadmap must be an array of Day objects.
 
-Each step must have:
-- "title": A concise, clear step title (e.g., "Master CSS Flexbox")
-- "description": A 1-2 sentence description of what the learner will achieve in this step
-- "resources": An array of 1-2 specific, real resource suggestions (e.g., article names, YouTube channel names, documentation pages — do NOT include URLs)
+Each Day object must have:
+- "day": The day number (integer, starting from 1)
+- "lessons": An array of lesson objects
 
-Return ONLY a valid JSON array of step objects. No markdown, no code blocks, no explanation — just the raw JSON array.
+Each lesson object must have:
+- "title": A concise, clear lesson title
+- "description": A 1-2 sentence explanation of what the learner will achieve
+- "resources": An array of 1-3 specific, highly relevant resource objects.
+
+Each resource object MUST HAVE:
+- "title": The name of the resource
+- "url": A REAL, valid URL to the resource (e.g., https://developer.mozilla.org...)
+
+Return ONLY a valid JSON array of Day objects. No markdown, no explanation
 
 Example output format:
 [
   {
-    "title": "Learn HTML Basics",
-    "description": "Understand the structure of HTML documents, common tags, and semantic markup.",
-    "resources": ["MDN HTML Guide", "freeCodeCamp HTML Course"]
+    "day": 1,
+    "lessons": [
+      {
+        "title": "Learn HTML Basics",
+        "description": "Understand the structure of HTML documents.",
+        "resources": [
+          { "title": "MDN HTML Guide", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML" }
+        ]
+      }
+    ]
   }
 ]`;
 
@@ -46,7 +61,7 @@ Example output format:
           content: `Generate a ${level}-level learning path for "${topic}" that can be completed in ${days} days. Return ONLY valid JSON.`,
         },
       ],
-      model: 'gpt-oss-20b',
+      model: 'openai/gpt-oss-20b',
       temperature: 0.7,
       max_tokens: 4096,
       response_format: { type: 'json_object' },
@@ -93,11 +108,14 @@ Example output format:
       topic,
       level,
       days,
-      steps: validation.data.map((step) => ({
-        title: step.title,
-        description: step.description,
-        resources: step.resources,
-        completed: false,
+      roadmap: validation.data.map((dayObj) => ({
+        day: dayObj.day,
+        lessons: dayObj.lessons.map((lesson) => ({
+          title: lesson.title,
+          description: lesson.description,
+          resources: lesson.resources,
+          completed: false,
+        })),
       })),
     });
 
@@ -143,12 +161,13 @@ const getPathById = async (req, res) => {
   }
 };
 
-// @desc    Toggle step completion
-// @route   PATCH /api/paths/:id/steps/:stepIndex
-const toggleStepComplete = async (req, res) => {
+// @desc    Toggle lesson completion
+// @route   PATCH /api/paths/:id/days/:dayIndex/lessons/:lessonIndex
+const toggleLessonComplete = async (req, res) => {
   try {
-    const { id, stepIndex } = req.params;
-    const idx = parseInt(stepIndex, 10);
+    const { id, dayIndex, lessonIndex } = req.params;
+    const dIdx = parseInt(dayIndex, 10);
+    const lIdx = parseInt(lessonIndex, 10);
 
     const path = await LearningPath.findOne({
       _id: id,
@@ -159,17 +178,23 @@ const toggleStepComplete = async (req, res) => {
       return res.status(404).json({ message: 'Learning path not found' });
     }
 
-    if (idx < 0 || idx >= path.steps.length) {
-      return res.status(400).json({ message: 'Invalid step index' });
+    if (dIdx < 0 || dIdx >= path.roadmap.length) {
+      return res.status(400).json({ message: 'Invalid day index' });
     }
 
-    path.steps[idx].completed = !path.steps[idx].completed;
+    const targetDay = path.roadmap[dIdx];
+
+    if (lIdx < 0 || lIdx >= targetDay.lessons.length) {
+      return res.status(400).json({ message: 'Invalid lesson index' });
+    }
+
+    targetDay.lessons[lIdx].completed = !targetDay.lessons[lIdx].completed;
     await path.save();
 
     res.json(path);
   } catch (error) {
-    console.error('Toggle step error:', error);
-    res.status(500).json({ message: 'Failed to update step' });
+    console.error('Toggle lesson error:', error);
+    res.status(500).json({ message: 'Failed to update lesson' });
   }
 };
 
@@ -193,4 +218,4 @@ const deletePath = async (req, res) => {
   }
 };
 
-module.exports = { generatePath, getUserPaths, getPathById, toggleStepComplete, deletePath };
+module.exports = { generatePath, getUserPaths, getPathById, toggleLessonComplete, deletePath };
