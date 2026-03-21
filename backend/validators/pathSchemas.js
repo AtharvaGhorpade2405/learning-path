@@ -1,6 +1,6 @@
-import { z } from 'zod';
+const { z } = require('zod');
 
-export const generatePathSchema = z.object({
+const generatePathSchema = z.object({
   topic: z
     .string({ required_error: 'Topic is required' })
     .min(2, 'Topic must be at least 2 characters')
@@ -18,10 +18,12 @@ export const generatePathSchema = z.object({
 });
 
 // Schema to validate the structured output from the LLM
-export const llmOutputSchema = z.array(
+const llmOutputSchema = z.array(
   z.object({
     title: z.string().min(1),
     description: z.string().min(1),
     resources: z.array(z.string()).min(1).max(2),
   })
 ).min(1, 'At least one step is required');
+
+module.exports = { generatePathSchema, llmOutputSchema };

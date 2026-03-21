@@ -1,6 +1,6 @@
-import { z } from 'zod';
+const { z } = require('zod');
 
-export const signupSchema = z.object({
+const signupSchema = z.object({
   name: z
     .string({ required_error: 'Name is required' })
     .min(2, 'Name must be at least 2 characters')
@@ -17,7 +17,7 @@ export const signupSchema = z.object({
     .max(100, 'Password must be at most 100 characters'),
 });
 
-export const loginSchema = z.object({
+const loginSchema = z.object({
   email: z
     .string({ required_error: 'Email is required' })
     .email('Invalid email address')
@@ -27,3 +27,5 @@ export const loginSchema = z.object({
     .string({ required_error: 'Password is required' })
     .min(1, 'Password is required'),
 });
+
+module.exports = { signupSchema, loginSchema };

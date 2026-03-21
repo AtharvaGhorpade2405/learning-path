@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const stepSchema = new mongoose.Schema({
   title: {
@@ -47,4 +47,4 @@ const learningPathSchema = new mongoose.Schema(
 );
 
 const LearningPath = mongoose.model('LearningPath', learningPathSchema);
-export default LearningPath;
+module.exports = LearningPath;

@@ -1,12 +1,16 @@
-import Groq from 'groq-sdk';
-import LearningPath from '../models/LearningPath.js';
-import { llmOutputSchema } from '../validators/pathSchemas.js';
+const Groq = require('groq-sdk');
+const LearningPath = require('../models/LearningPath');
+const { llmOutputSchema } = require('../validators/pathSchemas');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let _groq;
+function getGroq() {
+  if (!_groq) _groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  return _groq;
+}
 
 // @desc    Generate a new learning path via AI
 // @route   POST /api/paths/generate
-export const generatePath = async (req, res) => {
+const generatePath = async (req, res) => {
   try {
     const { topic, level, days } = req.body;
 
@@ -34,7 +38,7 @@ Example output format:
   }
 ]`;
 
-    const chatCompletion = await groq.chat.completions.create({
+    const chatCompletion = await getGroq().chat.completions.create({
       messages: [
         { role: 'system', content: systemPrompt },
         {
@@ -109,7 +113,7 @@ Example output format:
 
 // @desc    Get all learning paths for logged-in user
 // @route   GET /api/paths
-export const getUserPaths = async (req, res) => {
+const getUserPaths = async (req, res) => {
   try {
     const paths = await LearningPath.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json(paths);
@@ -121,7 +125,7 @@ export const getUserPaths = async (req, res) => {
 
 // @desc    Get a single learning path by ID
 // @route   GET /api/paths/:id
-export const getPathById = async (req, res) => {
+const getPathById = async (req, res) => {
   try {
     const path = await LearningPath.findOne({
       _id: req.params.id,
@@ -141,7 +145,7 @@ export const getPathById = async (req, res) => {
 
 // @desc    Toggle step completion
 // @route   PATCH /api/paths/:id/steps/:stepIndex
-export const toggleStepComplete = async (req, res) => {
+const toggleStepComplete = async (req, res) => {
   try {
     const { id, stepIndex } = req.params;
     const idx = parseInt(stepIndex, 10);
@@ -171,7 +175,7 @@ export const toggleStepComplete = async (req, res) => {
 
 // @desc    Delete a learning path
 // @route   DELETE /api/paths/:id
-export const deletePath = async (req, res) => {
+const deletePath = async (req, res) => {
   try {
     const path = await LearningPath.findOneAndDelete({
       _id: req.params.id,
@@ -188,3 +192,5 @@ export const deletePath = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete learning path' });
   }
 };
+
+module.exports = { generatePath, getUserPaths, getPathById, toggleStepComplete, deletePath };

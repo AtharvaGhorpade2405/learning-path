@@ -1,14 +1,14 @@
-import { Router } from 'express';
-import {
+const { Router } = require('express');
+const {
   generatePath,
   getUserPaths,
   getPathById,
   toggleStepComplete,
   deletePath,
-} from '../controllers/pathController.js';
-import validate from '../middleware/validate.js';
-import auth from '../middleware/auth.js';
-import { generatePathSchema } from '../validators/pathSchemas.js';
+} = require('../controllers/pathController');
+const validate = require('../middleware/validate');
+const auth = require('../middleware/auth');
+const { generatePathSchema } = require('../validators/pathSchemas');
 
 const router = Router();
 
@@ -21,4 +21,4 @@ router.get('/:id', getPathById);
 router.patch('/:id/steps/:stepIndex', toggleStepComplete);
 router.delete('/:id', deletePath);
 
-export default router;
+module.exports = router;

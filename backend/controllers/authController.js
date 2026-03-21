@@ -1,5 +1,5 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -7,7 +7,7 @@ const generateToken = (id) => {
 
 // @desc    Register new user
 // @route   POST /api/auth/signup
-export const signup = async (req, res) => {
+const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
@@ -32,7 +32,7 @@ export const signup = async (req, res) => {
 
 // @desc    Login user
 // @route   POST /api/auth/login
-export const login = async (req, res) => {
+const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -60,10 +60,12 @@ export const login = async (req, res) => {
 
 // @desc    Get current user profile
 // @route   GET /api/auth/me
-export const getMe = async (req, res) => {
+const getMe = async (req, res) => {
   res.json({
     _id: req.user._id,
     name: req.user.name,
     email: req.user.email,
   });
 };
+
+module.exports = { signup, login, getMe };
