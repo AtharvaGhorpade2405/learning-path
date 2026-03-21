@@ -182,13 +182,18 @@ const Roadmap = () => {
                 return (
                   <div key={dayIndex} className="mb-16 relative">
                     {/* Day Header */}
-                    <div className="flex justify-center mb-8 relative z-10">
-                      <div className={`px-6 py-2 rounded-full border-2 font-bold shadow-sm transition-colors duration-500 ${
+                    <div className="flex justify-center mb-10 relative z-10">
+                      <div className={`px-8 py-3 rounded-2xl border-2 shadow-sm transition-colors duration-500 text-center ${
                         isDayComplete 
                         ? 'bg-success/10 border-success/30 text-success' 
-                        : 'bg-white border-surface-dark text-dark-light'
+                        : 'bg-white border-surface-dark'
                       }`}>
-                        Day {dayObj.day}
+                        <div className={`text-xs font-bold uppercase tracking-widest mb-1 ${isDayComplete ? 'text-success/80' : 'text-dark-light'}`}>
+                          Day {dayObj.day}
+                        </div>
+                        <h3 className={`text-xl font-extrabold ${isDayComplete ? 'text-success' : 'text-dark'}`}>
+                          {dayObj.title}
+                        </h3>
                       </div>
                     </div>
                     

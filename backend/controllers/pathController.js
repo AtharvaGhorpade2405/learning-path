@@ -24,6 +24,7 @@ Generate a structured learning path spanning exactly ${days} day(s). The roadmap
 
 Each Day object must have:
 - "day": The day number (integer, starting from 1)
+- "title": A short, descriptive title for the Day summarizing what it teaches (e.g., "Introduction to HTML & the DOM")
 - "lessons": An array of lesson objects
 
 Each lesson object must have:
@@ -41,6 +42,7 @@ Example output format:
 [
   {
     "day": 1,
+    "title": "Introduction to HTML Basics",
     "lessons": [
       {
         "title": "Learn HTML Basics",
@@ -62,7 +64,6 @@ Example output format:
         },
       ],
       model: 'openai/gpt-oss-20b',
-      temperature: 0.7,
       max_tokens: 4096,
       response_format: { type: 'json_object' },
     });
@@ -110,6 +111,7 @@ Example output format:
       days,
       roadmap: validation.data.map((dayObj) => ({
         day: dayObj.day,
+        title: dayObj.title,
         lessons: dayObj.lessons.map((lesson) => ({
           title: lesson.title,
           description: lesson.description,

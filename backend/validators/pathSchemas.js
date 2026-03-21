@@ -21,6 +21,7 @@ const generatePathSchema = z.object({
 const llmOutputSchema = z.array(
   z.object({
     day: z.number(),
+    title: z.string().min(1),
     lessons: z.array(
       z.object({
         title: z.string().min(1),
