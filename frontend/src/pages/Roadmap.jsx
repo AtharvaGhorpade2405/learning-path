@@ -213,6 +213,8 @@ const Roadmap = () => {
                           pathId={path._id}
                           globalStatus={globalStatus}
                           onToggle={handleToggle}
+                          dayTitle={dayObj.title}
+                          currentKnowledge={path.currentKnowledge}
                         />
                       );
                       globalIndex++;

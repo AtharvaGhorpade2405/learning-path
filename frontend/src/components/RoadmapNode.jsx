@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import api from '../utils/api';
+import QuizModal from './QuizModal';
 import { 
   Code, Database, Globe, PenTool, Layout, Terminal, 
   Star, BookOpen, Server, Check, Smartphone, Monitor, Palette
@@ -46,9 +47,12 @@ const playSuccessSound = () => {
   }
 };
 
-const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLast, pathId, onToggle, globalStatus }) => {
+const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLast, pathId, onToggle, globalStatus, dayTitle, currentKnowledge }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [quizData, setQuizData] = useState(null);
+  
   const nodeRef = useRef(null);
 
   // Close popover when clicking outside
@@ -64,17 +68,10 @@ const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLa
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isExpanded]);
 
-  // Determine visual position for winding path
-  // Sequence for winding: Left(-2), CenterLeft(-1), CenterRight(1), Right(2) -> repeating or just zig-zag.
-  // Duolingo usually zig-zags around a center line. Let's use simple Left/Right alternations.
-  // We can use a pattern based on globalIndex.
   const offsets = ['-translate-x-12', 'translate-x-12', 'translate-x-24', 'translate-x-12', '-translate-x-12', '-translate-x-24'];
   const offsetClass = offsets[globalIndex % offsets.length];
 
-  const handleToggle = async (e) => {
-    e.stopPropagation();
-    if (globalStatus === 'locked') return; // Do nothing if locked
-    
+  const submitCompletion = async () => {
     setIsToggling(true);
     try {
       const { data } = await api.patch(`/paths/${pathId}/days/${dayIndex}/lessons/${lessonIndex}`);
@@ -85,15 +82,54 @@ const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLa
       }
       setIsExpanded(false);
     } catch {
-      toast.error('Failed to update lesson');
+      toast.error('Failed to update lesson state');
     } finally {
       setIsToggling(false);
     }
   };
 
+  const handleToggle = async (e) => {
+    e.stopPropagation();
+    if (globalStatus === 'locked') return; // Do nothing if locked
+    
+    // If marking as incomplete, just patch
+    if (lesson.completed) {
+      await submitCompletion();
+      return;
+    }
+
+    // Attempt to generate quiz
+    setIsGeneratingQuiz(true);
+    try {
+      const { data } = await api.post('/quizzes/generate', {
+        lessonTitle: lesson.title,
+        dayTitle,
+        currentKnowledge
+      });
+      setQuizData(data);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to generate Active Recall challenge. Skipping directly to completion...');
+      // Fallback: If AI fails, we still allow them to complete it to avoid a total hard block
+      await submitCompletion();
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
+  };
+
+  const handleQuizPass = async () => {
+    setQuizData(null);
+    await submitCompletion();
+  };
+
+  const handleQuizFail = () => {
+    setQuizData(null);
+    setIsExpanded(false);
+    toast.error('Good try! Review the material and try again to pass this lesson.', { icon: '💪', autoClose: 4000 });
+  };
+
   const IconComponent = getIconForTitle(lesson.title);
 
-  // Colors based on globalStatus ('completed', 'available', 'locked')
   let nodeStyle = '';
   let iconColor = '';
   
@@ -110,89 +146,107 @@ const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLa
   }
 
   return (
-    <div className={`relative flex flex-col items-center py-4 ${isExpanded ? 'z-50' : 'z-0'}`} ref={nodeRef}>
-      {/* Node Container with horizontal offset */}
-      <div className={`relative flex items-center justify-center transition-transform duration-500 ${offsetClass}`}>
-        
-        {/* Node Button */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          disabled={globalStatus === 'locked'}
-          className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center border-b-8 transition-transform active:border-b-0 active:translate-y-2 focus:outline-none ${nodeStyle}`}
-        >
-          {/* Inner highlight (crown effect) */}
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[40%] h-3 bg-white/20 rounded-full"></div>
+    <>
+      <QuizModal 
+        isOpen={!!quizData}
+        quizData={quizData}
+        onClose={() => setQuizData(null)}
+        onPass={handleQuizPass}
+        onFail={handleQuizFail}
+      />
+      
+      <div className={`relative flex flex-col items-center py-4 ${isExpanded ? 'z-50' : 'z-0'}`} ref={nodeRef}>
+        {/* Node Container with horizontal offset */}
+        <div className={`relative flex items-center justify-center transition-transform duration-500 ${offsetClass}`}>
           
-          <IconComponent size={36} strokeWidth={2.5} className={iconColor} />
-          
-          {/* Checkmark overlay for completed */}
-          {globalStatus === 'completed' && (
-            <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1 shadow-md border-2 border-surface-dark z-20">
-              <Check size={16} strokeWidth={4} className="text-success" />
+          {/* Node Button */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            disabled={globalStatus === 'locked'}
+            className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center border-b-8 transition-transform active:border-b-0 active:translate-y-2 focus:outline-none ${nodeStyle}`}
+          >
+            {/* Inner highlight (crown effect) */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[40%] h-3 bg-white/20 rounded-full"></div>
+            
+            <IconComponent size={36} strokeWidth={2.5} className={iconColor} />
+            
+            {/* Checkmark overlay for completed */}
+            {globalStatus === 'completed' && (
+              <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1 shadow-md border-2 border-surface-dark z-20">
+                <Check size={16} strokeWidth={4} className="text-success" />
+              </div>
+            )}
+          </button>
+
+          {/* Floating Popover Tooltip */}
+          {isExpanded && (
+            <div className="absolute z-50 top-full mt-4 left-1/2 -translate-x-1/2 w-72 bg-white rounded-2xl shadow-xl border-2 border-surface-dark p-4 animate-slide-up">
+              {/* Tooltip Arrow */}
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-t-2 border-l-2 border-surface-dark rotate-45"></div>
+              
+              <div className="relative z-10">
+                <h4 className="font-extrabold text-dark text-lg mb-2 leading-tight">
+                  {lesson.title}
+                </h4>
+                <p className="text-dark-light text-sm mb-4">
+                  {lesson.description}
+                </p>
+                
+                {/* Resources */}
+                {lesson.resources?.length > 0 && (
+                  <div className="mb-4">
+                    <h5 className="text-xs font-bold text-dark uppercase tracking-wider mb-2">
+                      📚 Resources
+                    </h5>
+                    <div className="space-y-2">
+                      {lesson.resources.map((resource, i) => (
+                        <a
+                          key={i}
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface hover:bg-surface-dark transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="text-primary text-sm">→</span>
+                          <span className="text-sm text-dark font-medium underline line-clamp-1">{resource.title}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                 {/* Action Button */}
+                 <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleToggle(e);
+                    }}
+                    disabled={isToggling || isGeneratingQuiz}
+                    className={`relative z-20 w-full py-3 rounded-xl font-extrabold text-sm transition-all focus:outline-none flex justify-center items-center gap-2 btn-push cursor-pointer ${
+                      globalStatus === 'completed'
+                        ? 'bg-surface text-dark-light border-surface-dark'
+                        : 'bg-primary text-white border-primary-dark'
+                    } disabled:opacity-50`}
+                  >
+                    {isGeneratingQuiz ? (
+                       <>
+                         <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                         </svg>
+                         Preparing Challenge...
+                       </>
+                    ) : isToggling ? 'Updating...' : globalStatus === 'completed' ? 'Mark Incomplete' : 'Complete Lesson'}
+                  </button>
+              </div>
             </div>
           )}
-        </button>
-
-        {/* Floating Popover Tooltip */}
-        {isExpanded && (
-          <div className="absolute z-50 top-full mt-4 left-1/2 -translate-x-1/2 w-72 bg-white rounded-2xl shadow-xl border-2 border-surface-dark p-4 animate-slide-up">
-            {/* Tooltip Arrow */}
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-t-2 border-l-2 border-surface-dark rotate-45"></div>
-            
-            <div className="relative z-10">
-              <h4 className="font-extrabold text-dark text-lg mb-2 leading-tight">
-                {lesson.title}
-              </h4>
-              <p className="text-dark-light text-sm mb-4">
-                {lesson.description}
-              </p>
-              
-              {/* Resources */}
-              {lesson.resources?.length > 0 && (
-                <div className="mb-4">
-                  <h5 className="text-xs font-bold text-dark uppercase tracking-wider mb-2">
-                    📚 Resources
-                  </h5>
-                  <div className="space-y-2">
-                    {lesson.resources.map((resource, i) => (
-                      <a
-                        key={i}
-                        href={resource.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface hover:bg-surface-dark transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <span className="text-primary text-sm">→</span>
-                        <span className="text-sm text-dark font-medium underline line-clamp-1">{resource.title}</span>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-               {/* Action Button */}
-               <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleToggle(e);
-                  }}
-                  disabled={isToggling}
-                  className={`relative z-20 w-full py-3 rounded-xl font-extrabold text-sm transition-all focus:outline-none btn-push cursor-pointer ${
-                    globalStatus === 'completed'
-                      ? 'bg-surface text-dark-light border-surface-dark'
-                      : 'bg-primary text-white border-primary-dark'
-                  } disabled:opacity-50`}
-                >
-                  {isToggling ? 'Updating...' : globalStatus === 'completed' ? 'Mark Incomplete' : 'Complete Lesson'}
-                </button>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
