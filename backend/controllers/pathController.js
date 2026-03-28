@@ -22,7 +22,7 @@ Available timeframe: ${days} day(s)
 
 Carefully read their current knowledge context. Adapt the roadmap STRICTLY based on what they already know (skip basics if they already know them, or start from scratch if they are a complete beginner).
 
-Generate a structured learning path spanning exactly ${days} day(s). The roadmap must be an array of Day objects.
+Generate a structured learning path spanning exactly ${days} day(s). The roadmap must be an array of Day objects. Use the web search tool for this task if needed. Use the course structure from websites like Coursera, Udemy, edX, etc. to create a comprehensive learning path.
 
 Each Day object must have:
 - "day": The day number (integer, starting from 1)
@@ -36,7 +36,7 @@ Each lesson object must have:
 
 Each resource object MUST HAVE:
 - "title": The name of the resource
-- "url": A REAL, valid URL to the resource (e.g., https://developer.mozilla.org...)
+- "url": A REAL, valid URL to the resource (e.g., https://developer.mozilla.org...). Suggest free resources only and make sure that the URLs you provide are valid and do not return a 404 error. Use the web search tool for this task.
 
 Return ONLY a valid JSON array of Day objects. No markdown, no explanation
 
@@ -65,12 +65,13 @@ Example output format:
           content: `Generate a custom learning path for "${topic}" based on this context: "${currentKnowledge}". It must span exactly ${days} days. Return ONLY valid JSON.`,
         },
       ],
-      model: 'openai/gpt-oss-20b',
+      model: 'groq/compound',
       max_tokens: 4096,
       response_format: { type: 'json_object' },
     });
 
     const rawContent = chatCompletion.choices[0]?.message?.content;
+    console.log(chatCompletion.choices[0].message.executed_tools?.[0].search_results);
     if (!rawContent) {
       return res.status(502).json({ message: 'No response from AI model' });
     }
