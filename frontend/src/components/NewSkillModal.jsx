@@ -125,7 +125,7 @@ const NewSkillModal = ({ isOpen, onClose, onCreated }) => {
             <button
               type="submit"
               disabled={isLoading || !topic.trim()}
-              className="w-full py-3.5 rounded-xl font-bold text-white gradient-bg hover:opacity-90 active:scale-[0.98] transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full py-4 rounded-full font-extrabold text-white text-lg bg-primary border-primary-dark transition-all duration-200 btn-push disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -133,7 +133,7 @@ const NewSkillModal = ({ isOpen, onClose, onCreated }) => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  AI is crafting your roadmap...
+                  Crafting Roadmap...
                 </span>
               ) : (
                 '🚀 Generate My Learning Path'

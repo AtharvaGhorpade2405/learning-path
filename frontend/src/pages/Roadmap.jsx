@@ -125,105 +125,113 @@ const Roadmap = () => {
         </Link>
 
         {/* Header */}
-        <div className="bg-card rounded-3xl p-6 sm:p-8 shadow-lg border border-surface-dark/20 mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-dark flex items-center gap-3">
-                {isComplete && <span className="text-3xl animate-confetti">🏆</span>}
-                {path.topic}
-              </h1>
-              <div className="flex items-center gap-3 mt-2 flex-wrap">
-                <span className="text-sm text-dark-light">📅 {path.days} day plan</span>
-                <span className="text-surface-dark">·</span>
-                <span className="text-sm text-dark-light">{totalLessons} lessons</span>
-              </div>
+        <div className="bg-card rounded-[2rem] p-6 sm:p-8 shadow-sm border-4 border-surface-dark mb-10 text-center relative overflow-hidden">
+          {isComplete && (
+            <div className="absolute inset-0 bg-success/10 pointer-events-none z-0"></div>
+          )}
+          <div className="relative z-10 flex flex-col items-center gap-4">
+            <h1 className="text-3xl sm:text-4xl font-black text-dark flex items-center gap-3">
+              {isComplete && <span className="text-4xl animate-confetti drop-shadow-md">🏆</span>}
+              {path.topic}
+            </h1>
+            <div className="flex items-center gap-3 font-bold text-dark-light uppercase tracking-widest text-sm bg-surface-dark px-4 py-2 rounded-full">
+              <span>{path.days} Day Plan</span>
+              <span className="text-dark opacity-30">|</span>
+              <span>{totalLessons} Lessons</span>
             </div>
+            
+            <div className="w-full max-w-lg mt-4">
+              <ProgressBar completed={completed} total={total} size="lg" />
+            </div>
+
+            {isComplete && (
+               <div className="mt-2 text-success-dark font-black text-lg animate-pulse-soft">
+                 Path Conquered! 🎉
+               </div>
+            )}
+
             <button
               onClick={handleDelete}
               disabled={isDeleting}
-              className="text-sm text-danger hover:bg-danger/10 px-4 py-2 rounded-xl transition-colors self-start cursor-pointer font-medium"
+              className="mt-4 text-xs font-bold text-danger border-2 border-danger/20 hover:bg-danger/10 px-4 py-2 rounded-xl transition-all cursor-pointer inline-flex items-center gap-2"
             >
-              {isDeleting ? 'Deleting...' : '🗑 Delete'}
+              {isDeleting ? 'Deleting...' : '🗑 Abandon Path'}
             </button>
           </div>
-
-          {/* Progress bar */}
-          <ProgressBar completed={completed} total={total} size="lg" />
-
-          {isComplete && (
-            <div className="mt-4 p-4 rounded-xl bg-success/10 border border-success/20 text-center">
-              <p className="text-success font-bold text-lg">
-                🎉 Congratulations! You've completed this learning path!
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Roadmap Path */}
-        <div className="relative">
-          {/* Nodes grouped by Day */}
-          <div className="relative py-6">
-            {/* Central path line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-1 -translate-x-1/2 bg-gradient-to-b from-primary via-primary-light to-secondary rounded-full opacity-20 z-0"></div>
+        <div className="relative flex flex-col items-center">
+          {(() => {
+            let globalIndex = 0;
+            let foundFirstUncompleted = false;
 
-            {(() => {
-              let globalIndex = 0;
-              return path.roadmap?.map((dayObj, dayIndex) => {
-                const isDayComplete = dayObj.lessons.length > 0 && dayObj.lessons.every(l => l.completed);
-                
-                return (
-                  <div key={dayIndex} className="mb-16 relative">
-                    {/* Day Header */}
-                    <div className="flex justify-center mb-10 relative z-10">
-                      <div className={`px-8 py-3 rounded-2xl border-2 shadow-sm transition-colors duration-500 text-center bg-white  ${
-                        isDayComplete 
-                        ? 'border-success/30 text-success' 
-                        : 'border-surface-dark'
-                      }`}>
-                        <div className={`text-xs font-bold uppercase tracking-widest mb-1 ${isDayComplete ? 'text-success/80' : 'text-dark-light'}`}>
-                          Day {dayObj.day}
-                        </div>
-                        <h3 className={`text-xl font-extrabold ${isDayComplete ? 'text-success' : 'text-dark'}`}>
-                          {dayObj.title}
-                        </h3>
+            return path.roadmap?.map((dayObj, dayIndex) => {
+              const isDayComplete = dayObj.lessons.length > 0 && dayObj.lessons.every(l => l.completed);
+              
+              return (
+                <div key={dayIndex} className="w-full relative flex flex-col items-center mb-12">
+                  {/* Day Header Banner */}
+                  <div className="relative z-10 w-full flex justify-center mb-10 px-4">
+                    <div className={`px-6 sm:px-10 py-4 sm:py-5 rounded-3xl border-b-[6px] transition-colors text-center shadow-sm w-full max-w-md ${
+                      isDayComplete 
+                      ? 'bg-success/10 text-success-dark border-success/30' 
+                      : 'bg-white text-dark border-surface-dark'
+                    }`}>
+                      <div className={`text-[10px] sm:text-xs font-black uppercase tracking-widest mb-1 opacity-70`}>
+                        Day {dayObj.day}
                       </div>
-                    </div>
-                    
-                    {/* Lessons in Day */}
-                    <div className="space-y-10">
-                      {dayObj.lessons.map((lesson, lessonIndex) => {
-                        const isFirst = dayIndex === 0 && lessonIndex === 0;
-                        const isLast = dayIndex === path.roadmap.length - 1 && lessonIndex === dayObj.lessons.length - 1;
-                        
-                        return (
-                          <RoadmapNode
-                            key={`${dayIndex}-${lessonIndex}`}
-                            lesson={lesson}
-                            dayIndex={dayIndex}
-                            lessonIndex={lessonIndex}
-                            globalIndex={globalIndex++}
-                            isFirst={isFirst}
-                            isLast={isLast}
-                            pathId={path._id}
-                            onToggle={handleToggle}
-                          />
-                        );
-                      })}
+                      <h3 className="text-lg sm:text-xl font-extrabold leading-tight">
+                        {dayObj.title}
+                      </h3>
                     </div>
                   </div>
-                );
-              });
-            })()}
-          </div>
+                  
+                  {/* Lessons in Day */}
+                  <div className="relative w-full flex flex-col items-center">
+                    {dayObj.lessons.map((lesson, lessonIndex) => {
+                      const isFirst = globalIndex === 0;
+                      const isLast = globalIndex === totalLessons - 1;
+                      
+                      let globalStatus = 'locked';
+                      if (lesson.completed) {
+                        globalStatus = 'completed';
+                      } else if (!foundFirstUncompleted) {
+                        globalStatus = 'available';
+                        foundFirstUncompleted = true;
+                      }
+
+                      const node = (
+                        <RoadmapNode
+                          key={`${dayIndex}-${lessonIndex}`}
+                          lesson={lesson}
+                          dayIndex={dayIndex}
+                          lessonIndex={lessonIndex}
+                          globalIndex={globalIndex}
+                          isFirst={isFirst}
+                          isLast={isLast}
+                          pathId={path._id}
+                          globalStatus={globalStatus}
+                          onToggle={handleToggle}
+                        />
+                      );
+                      globalIndex++;
+                      return node;
+                    })}
+                  </div>
+                </div>
+              );
+            });
+          })()}
 
           {/* End marker */}
-          <div className="flex justify-center pt-4">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl border-4 ${
+          <div className="flex justify-center pt-8 pb-16 relative z-10">
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl border-b-8 transition-transform ${
               isComplete
-                ? 'bg-success border-success/30 text-white shadow-lg shadow-success/30'
-                : 'bg-white border-surface-dark text-dark-light'
+                ? 'bg-secondary border-secondary-dark text-white animate-bounce shadow-lg shadow-secondary/30'
+                : 'bg-locked border-locked-dark text-dark/30 grayscale opacity-50'
             }`}>
-              {isComplete ? '🏆' : '🏁'}
+              🏆
             </div>
           </div>
         </div>

@@ -56,31 +56,28 @@ const Dashboard = () => {
 
         {/* Stats Row */}
         {paths.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
             {[
-              { label: 'Active Skills', value: paths.length, emoji: '📚', color: 'bg-primary/10 text-primary' },
-              { label: 'Total Days', value: totalDays, emoji: '🎯', color: 'bg-secondary/10 text-secondary-dark' },
-              { label: 'Completed', value: completedDays, emoji: '✅', color: 'bg-success/10 text-success' },
-              { label: 'Progress', value: totalDays > 0 ? `${Math.round((completedDays / totalDays) * 100)}%` : '0%', emoji: '🔥', color: 'bg-accent/10 text-accent' },
+              { label: 'Worlds', value: paths.length, emoji: '🌎', color: 'bg-primary border-primary-dark text-white' },
+              { label: 'Total Days', value: totalDays, emoji: '🎯', color: 'bg-secondary border-secondary-dark text-white' },
+              { label: 'Completed', value: completedDays, emoji: '✅', color: 'bg-success border-success-dark text-white' },
+              { label: 'Progress', value: totalDays > 0 ? `${Math.round((completedDays / totalDays) * 100)}%` : '0%', emoji: '🔥', color: 'bg-accent border-accent-light text-white' },
             ].map((stat) => (
-              <div key={stat.label} className="bg-card rounded-2xl p-4 border border-surface-dark/30">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xl">{stat.emoji}</span>
-                  <span className="text-xs font-semibold text-dark-light uppercase tracking-wider">{stat.label}</span>
-                </div>
-                <p className={`text-2xl font-extrabold ${stat.color.split(' ')[1]}`}>{stat.value}</p>
+              <div key={stat.label} className={`rounded-3xl p-4 sm:p-5 border-b-[6px] transition-transform hover:-translate-y-1 flex flex-col items-center justify-center text-center ${stat.color}`}>
+                <span className="text-3xl sm:text-4xl mb-1 drop-shadow-sm">{stat.emoji}</span>
+                <p className="text-3xl sm:text-4xl font-extrabold drop-shadow-sm pt-1">{stat.value}</p>
+                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest opacity-80 mt-1">{stat.label}</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* New Skill Button */}
         <button
           onClick={() => setShowModal(true)}
-          className="w-full sm:w-auto mb-8 px-8 py-4 rounded-2xl font-bold text-white gradient-bg hover:opacity-90 active:scale-[0.98] transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 text-lg cursor-pointer"
+          className="w-full sm:w-auto mb-10 px-8 py-4 rounded-full font-extrabold text-white bg-primary border-primary-dark transition-all duration-200 flex items-center justify-center gap-3 text-xl cursor-pointer btn-push"
         >
           <span className="text-2xl">✨</span>
-          Learn a New Skill
+          Unlock New World
         </button>
 
         {/* Skills Grid */}
