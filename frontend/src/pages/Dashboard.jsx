@@ -50,7 +50,7 @@ const Dashboard = () => {
           <p className="text-dark-light mt-2 text-lg">
             {paths.length === 0
               ? "Ready to start learning something amazing?"
-              : "Keep going — you're doing great!"}
+              : "Keep going - you're doing great!"}
           </p>
         </div>
 
