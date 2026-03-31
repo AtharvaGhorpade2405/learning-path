@@ -98,7 +98,6 @@ Example output format:
     });
 
     const rawContent = chatCompletion.choices[0]?.message?.content;
-    console.log(chatCompletion.choices[0].message.executed_tools?.[0]?.search_results);
     if (!rawContent) {
       return res.status(502).json({ message: 'No response from AI model' });
     }

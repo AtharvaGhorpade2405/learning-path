@@ -49,7 +49,7 @@ const FeaturesGrid = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
             <span className="text-sm">🎮</span>
             <span className="text-xs font-black uppercase tracking-widest text-primary-dark">
-              Why LearnPath?
+              Why Ascend?
             </span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-dark">

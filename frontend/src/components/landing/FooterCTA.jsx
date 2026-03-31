@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Rocket } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const FooterCTA = () => {
+  const { user } = useAuth();
+
   return (
     <section className="relative overflow-hidden">
       {/* Gradient background */}
@@ -27,17 +30,19 @@ const FooterCTA = () => {
           </p>
 
           <Link
-            to="/signup"
+            to={user ? '/dashboard' : '/signup'}
             className="inline-flex items-center gap-3 px-10 py-5 text-xl font-extrabold text-primary bg-white rounded-full border-b-[6px] border-surface-dark active:border-b-0 active:translate-y-1.5 transition-all duration-150 hover:brightness-110 shadow-xl hover:shadow-2xl"
           >
             <Rocket size={24} />
-            Create Free Account
+            {user ? 'Go to Dashboard' : 'Create Free Account'}
           </Link>
 
           {/* Sub-text */}
-          <p className="mt-6 text-white/60 text-sm font-medium">
-            No credit card required · Setup in 30 seconds
-          </p>
+          {!user && (
+            <p className="mt-6 text-white/60 text-sm font-medium">
+              No credit card required · Setup in 30 seconds
+            </p>
+          )}
         </div>
       </div>
 
@@ -48,10 +53,10 @@ const FooterCTA = () => {
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Rocket size={14} className="text-white" />
             </div>
-            <span className="text-sm font-bold text-white/70">LearnPath</span>
+            <span className="text-sm font-bold text-white/70">Ascend</span>
           </div>
           <p className="text-xs text-white/40 font-medium">
-            © {new Date().getFullYear()} LearnPath. Level up, one quest at a time.
+            © {new Date().getFullYear()} Ascend. Level up, one quest at a time.
           </p>
         </div>
       </div>

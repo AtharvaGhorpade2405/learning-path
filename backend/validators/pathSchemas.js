@@ -7,10 +7,11 @@ const generatePathSchema = z.object({
     .max(100, 'Topic must be at most 100 characters')
     .trim(),
   currentKnowledge: z
-    .string({ required_error: 'Current knowledge is required' })
-    .min(2, 'Please provide a bit of context')
+    .string()
     .max(1000, 'Please keep it under 1000 characters')
-    .trim(),
+    .trim()
+    .optional()
+    .default(''),
   days: z
     .number({ required_error: 'Days is required', invalid_type_error: 'Days must be a number' })
     .int('Days must be a whole number')

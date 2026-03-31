@@ -43,7 +43,7 @@ const Signup = () => {
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-bg flex items-center justify-center shadow-lg">
               <span className="text-3xl">✨</span>
             </div>
-            <h1 className="text-3xl font-extrabold text-dark">Join LearnPath</h1>
+            <h1 className="text-3xl font-extrabold text-dark">Join Ascend</h1>
             <p className="text-dark-light mt-2">Start your personalized learning adventure</p>
           </div>
 

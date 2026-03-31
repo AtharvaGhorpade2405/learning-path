@@ -64,17 +64,48 @@ Return a JSON object with these exact fields:
       return res.status(502).json({ message: 'No response from AI model' });
     }
 
+    // Clean up the raw content — groq/compound may return markdown-wrapped JSON
+    let cleanContent = rawContent.trim();
+
+    // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
+    const fenceMatch = cleanContent.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+    if (fenceMatch) {
+      cleanContent = fenceMatch[1].trim();
+    }
+
     let parsed;
     try {
-      parsed = JSON.parse(rawContent);
+      parsed = JSON.parse(cleanContent);
     } catch {
-      return res.status(502).json({ message: 'AI returned invalid JSON' });
+      // Last resort: try to find a JSON object in the content
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch {
+          console.error('Failed to parse NSQF JSON even after extraction:', cleanContent);
+          return res.status(502).json({ message: 'AI returned invalid JSON' });
+        }
+      } else {
+        console.error('No JSON object found in NSQF response:', cleanContent);
+        return res.status(502).json({ message: 'AI returned invalid JSON' });
+      }
+    }
+
+    // Handle object wrapping — sometimes the AI wraps the result in a key
+    // e.g. { "result": { parsedExperience: [...], ... } }
+    if (!parsed.parsedExperience && !parsed.estimatedBaseNsqf) {
+      const firstKey = Object.keys(parsed)[0];
+      if (firstKey && typeof parsed[firstKey] === 'object' && parsed[firstKey].parsedExperience) {
+        parsed = parsed[firstKey];
+      }
     }
 
     // Validate with Zod
     const validation = nsqfAnalysisOutputSchema.safeParse(parsed);
     if (!validation.success) {
       console.error('NSQF analysis validation failed:', validation.error.errors);
+      console.error('Parsed object was:', JSON.stringify(parsed, null, 2));
       return res.status(502).json({
         message: 'AI output failed validation',
         errors: validation.error.errors,

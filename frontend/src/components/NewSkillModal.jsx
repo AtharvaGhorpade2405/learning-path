@@ -87,14 +87,13 @@ const NewSkillModal = ({ isOpen, onClose, onCreated }) => {
             {/* Knowledge Context */}
             <div>
               <label className="block text-sm font-semibold text-dark mb-2">
-                What do you already know about this topic?
+                What do you already know about this topic? <span className="text-dark-light font-normal">(optional)</span>
               </label>
               <textarea
                 value={currentKnowledge}
                 onChange={(e) => setCurrentKnowledge(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border-2 border-surface-dark bg-surface focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none transition-all duration-200 text-dark placeholder-dark-light/50 resize-none h-24"
                 placeholder="e.g., I know the basics of HTML but struggling with CSS padding..."
-                required
                 disabled={isLoading}
               />
             </div>

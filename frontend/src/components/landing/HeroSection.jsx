@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, Star, Zap, BookOpen, Code, Brain, Check } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const PathNode = ({ icon: Icon, color, borderColor, label, delay, completed }) => (
   <div className="flex flex-col items-center gap-2 animate-slide-up" style={{ animationDelay: `${delay}ms` }}>
@@ -34,6 +35,8 @@ const PathConnector = ({ delay }) => (
 );
 
 const HeroSection = () => {
+  const { user } = useAuth();
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 via-white to-white pt-12 sm:pt-20 pb-16 sm:pb-24">
       {/* Decorative blobs */}
@@ -73,11 +76,11 @@ const HeroSection = () => {
         {/* CTA Button */}
         <div className="animate-slide-up" style={{ animationDelay: '300ms' }}>
           <Link
-            to="/signup"
+            to={user ? '/dashboard' : '/signup'}
             className="inline-flex items-center gap-3 px-10 py-5 text-xl font-extrabold text-white bg-primary rounded-full border-b-[6px] border-primary-dark active:border-b-0 active:translate-y-1.5 transition-all duration-150 hover:brightness-110 shadow-xl hover:shadow-2xl animate-glow"
           >
             <span className="text-2xl">✨</span>
-            Start Your Adventure
+            {user ? 'Go to Dashboard' : 'Start Your Adventure'}
           </Link>
         </div>
 

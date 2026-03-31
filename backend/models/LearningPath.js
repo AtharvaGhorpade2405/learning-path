@@ -47,7 +47,7 @@ const learningPathSchema = new mongoose.Schema(
     },
     currentKnowledge: {
       type: String,
-      required: true,
+      default: '',
       trim: true,
     },
     days: {
