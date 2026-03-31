@@ -22,6 +22,7 @@ const signup = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      careerProfile: user.careerProfile || {},
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -50,6 +51,7 @@ const login = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      careerProfile: user.careerProfile || {},
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -65,6 +67,7 @@ const getMe = async (req, res) => {
     _id: req.user._id,
     name: req.user.name,
     email: req.user.email,
+    careerProfile: req.user.careerProfile || {},
   });
 };
 

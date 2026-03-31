@@ -1,5 +1,6 @@
 const Groq = require('groq-sdk');
 const LearningPath = require('../models/LearningPath');
+const User = require('../models/User');
 const { llmOutputSchema } = require('../validators/pathSchemas');
 
 let _groq;
@@ -14,15 +15,39 @@ const generatePath = async (req, res) => {
   try {
     const { topic, currentKnowledge, days } = req.body;
 
+    // Fetch user's NSQF career profile
+    const user = await User.findById(req.user._id);
+    const baseNsqf = user?.careerProfile?.baseNsqfScore;
+    const parsedExperience = user?.careerProfile?.parsedExperience || [];
+
+    // Build NSQF context block if user has a profile
+    let nsqfContext = '';
+    if (baseNsqf) {
+      nsqfContext = `
+NSQF CONTEXT:
+The user has a general background at NSQF Level ${baseNsqf}.
+Their key experiences: ${parsedExperience.length > 0 ? parsedExperience.join(', ') : 'Not specified'}.
+The user explicitly stated they know: "${currentKnowledge}".
+
+First, determine their *Current NSQF Level* specifically for the topic "${topic}" they want to learn. Then, generate a roadmap strictly designed to elevate them from their current level to the *Next* NSQF level for this topic. Each "Day" in the roadmap must align with standard NSQF competency requirements (e.g., knowledge, skills, aptitude).
+
+In your response, include two top-level fields:
+- "startingNsqfLevel": The user's current NSQF level for this specific topic (integer, 1-10)
+- "targetNsqfLevel": The NSQF level they will reach after completing this roadmap (integer, 1-10)
+- "roadmap": The array of Day objects
+`;
+    }
+
     const systemPrompt = `You are an expert curriculum designer. Create a detailed, step-by-step learning roadmap grouped by days.
 
 The user wants to learn: "${topic}"
 Their current knowledge context: "${currentKnowledge}"
 Available timeframe: ${days} day(s)
-
+${nsqfContext}
 Carefully read their current knowledge context. Adapt the roadmap STRICTLY based on what they already know (skip basics if they already know them, or start from scratch if they are a complete beginner).
 
-Generate a structured learning path spanning exactly ${days} day(s). The roadmap must be an array of Day objects. Use the web search tool for this task if needed. Use the course structure from websites like Coursera, Udemy, edX, etc. to create a comprehensive learning path.
+Generate a structured learning path spanning exactly ${days} day(s). The response must be a JSON object with:
+${baseNsqf ? '- "startingNsqfLevel": integer (1-10) — the user\'s current NSQF level for this topic\n- "targetNsqfLevel": integer (1-10) — the target NSQF level after completing this roadmap\n' : ''}- "roadmap": an array of Day objects
 
 Each Day object must have:
 - "day": The day number (integer, starting from 1)
@@ -38,24 +63,26 @@ Each resource object MUST HAVE:
 - "title": The name of the resource
 - "url": A REAL, valid URL to the resource (e.g., https://developer.mozilla.org...). Suggest free resources only and make sure that the URLs you provide are valid and do not return a 404 error. Use the web search tool for this task.
 
-Return ONLY a valid JSON array of Day objects. No markdown, no explanation
+Return ONLY a valid JSON object. No markdown, no explanation
 
 Example output format:
-[
-  {
-    "day": 1,
-    "title": "Introduction to HTML Basics",
-    "lessons": [
-      {
-        "title": "Learn HTML Basics",
-        "description": "Understand the structure of HTML documents.",
-        "resources": [
-          { "title": "MDN HTML Guide", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML" }
-        ]
-      }
-    ]
-  }
-]`;
+{
+  ${baseNsqf ? '"startingNsqfLevel": 3,\n  "targetNsqfLevel": 4,\n  ' : ''}"roadmap": [
+    {
+      "day": 1,
+      "title": "Introduction to HTML Basics",
+      "lessons": [
+        {
+          "title": "Learn HTML Basics",
+          "description": "Understand the structure of HTML documents.",
+          "resources": [
+            { "title": "MDN HTML Guide", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML" }
+          ]
+        }
+      ]
+    }
+  ]
+}`;
 
     const chatCompletion = await getGroq().chat.completions.create({
       messages: [
@@ -71,7 +98,7 @@ Example output format:
     });
 
     const rawContent = chatCompletion.choices[0]?.message?.content;
-    console.log(chatCompletion.choices[0].message.executed_tools?.[0].search_results);
+    console.log(chatCompletion.choices[0].message.executed_tools?.[0]?.search_results);
     if (!rawContent) {
       return res.status(502).json({ message: 'No response from AI model' });
     }
@@ -84,12 +111,20 @@ Example output format:
       return res.status(502).json({ message: 'AI returned invalid JSON' });
     }
 
-    // The LLM might wrap the array in an object like { steps: [...] } or { roadmap: [...] }
-    let stepsArray = parsed;
-    if (!Array.isArray(parsed)) {
-      // Try to extract an array from the first key
-      const firstKey = Object.keys(parsed)[0];
-      if (firstKey && Array.isArray(parsed[firstKey])) {
+    // Extract NSQF levels if present
+    let startingNsqfLevel = parsed.startingNsqfLevel || null;
+    let targetNsqfLevel = parsed.targetNsqfLevel || null;
+
+    // Extract the roadmap array from the response
+    let stepsArray;
+    if (Array.isArray(parsed)) {
+      stepsArray = parsed;
+    } else if (parsed.roadmap && Array.isArray(parsed.roadmap)) {
+      stepsArray = parsed.roadmap;
+    } else {
+      // Try to extract an array from the first key that is an array
+      const firstKey = Object.keys(parsed).find((k) => Array.isArray(parsed[k]));
+      if (firstKey) {
         stepsArray = parsed[firstKey];
       } else {
         return res.status(502).json({ message: 'AI response is not in the expected format' });
@@ -112,6 +147,9 @@ Example output format:
       topic,
       currentKnowledge,
       days,
+      startingNsqfLevel,
+      targetNsqfLevel,
+      skillNsqfLevel: startingNsqfLevel, // Initialize at starting level
       roadmap: validation.data.map((dayObj) => ({
         day: dayObj.day,
         title: dayObj.title,
