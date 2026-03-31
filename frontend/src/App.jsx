@@ -8,6 +8,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Roadmap from './pages/Roadmap';
 import CareerSetup from './pages/CareerSetup';
+import Landing from './pages/Landing';
 
 function App() {
   return (
@@ -40,7 +41,8 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
       <ToastContainer
