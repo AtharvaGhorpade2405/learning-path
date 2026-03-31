@@ -10,6 +10,8 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  const hasNsqf = user?.careerProfile?.baseNsqfScore != null;
+
   return (
     <nav className="sticky top-0 z-50 glass border-b border-white/20 bg-white/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,7 +28,27 @@ const Navbar = () => {
 
           {/* Right Side */}
           {user && (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {/* NSQF Badge */}
+              {hasNsqf ? (
+                <Link
+                  to="/career-setup"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 hover:bg-accent/20 transition-colors"
+                >
+                  <span className="text-xs">🎯</span>
+                  <span className="text-xs font-black text-accent">
+                    NSQF {user.careerProfile.baseNsqfScore}
+                  </span>
+                </Link>
+              ) : (
+                <Link
+                  to="/career-setup"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/5 border border-dashed border-accent/30 hover:bg-accent/10 transition-colors"
+                >
+                  <span className="text-xs font-bold text-accent">Set NSQF →</span>
+                </Link>
+              )}
+
               <div className="hidden sm:flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full">
                 <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-sm font-bold">
                   {user.name?.charAt(0).toUpperCase()}
@@ -50,3 +72,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

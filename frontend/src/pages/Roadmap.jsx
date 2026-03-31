@@ -134,10 +134,20 @@ const Roadmap = () => {
               {isComplete && <span className="text-4xl animate-confetti drop-shadow-md">🏆</span>}
               {path.topic}
             </h1>
-            <div className="flex items-center gap-3 font-bold text-dark-light uppercase tracking-widest text-sm bg-surface-dark px-4 py-2 rounded-full">
+
+            <div className="flex items-center gap-3 font-bold text-dark-light uppercase tracking-widest text-sm bg-surface-dark px-4 py-2 rounded-full flex-wrap justify-center">
               <span>{path.days} Day Plan</span>
               <span className="text-dark opacity-30">|</span>
               <span>{totalLessons} Lessons</span>
+              {path.startingNsqfLevel && path.targetNsqfLevel && (
+                <>
+                  <span className="text-dark opacity-30">|</span>
+                  <span className="flex items-center gap-1.5 text-accent">
+                    <span>🎯</span>
+                    Lvl {path.startingNsqfLevel} → {path.targetNsqfLevel}
+                  </span>
+                </>
+              )}
             </div>
             
             <div className="w-full max-w-lg mt-4">
@@ -145,9 +155,19 @@ const Roadmap = () => {
             </div>
 
             {isComplete && (
-               <div className="mt-2 text-success-dark font-black text-lg animate-pulse-soft">
-                 Path Conquered! 🎉
-               </div>
+              <div className="mt-2">
+                <div className="text-success-dark font-black text-lg animate-pulse-soft">
+                  Path Conquered! 🎉
+                </div>
+                {path.targetNsqfLevel && (
+                  <div className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 animate-slide-up">
+                    <span className="text-lg">⬆️</span>
+                    <span className="text-sm font-black text-accent">
+                      Ready for Level {path.targetNsqfLevel}! Recalculate from Dashboard.
+                    </span>
+                  </div>
+                )}
+              </div>
             )}
 
             <button
