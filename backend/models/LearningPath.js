@@ -56,6 +56,9 @@ const learningPathSchema = new mongoose.Schema(
       min: 1,
     },
     roadmap: [daySchema],
+    startingNsqfLevel: { type: Number, min: 1, max: 10, default: null },
+    targetNsqfLevel: { type: Number, min: 1, max: 10, default: null },
+    skillNsqfLevel: { type: Number, min: 1, max: 10, default: null },
   },
 
   { timestamps: true }

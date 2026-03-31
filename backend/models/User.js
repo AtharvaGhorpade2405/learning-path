@@ -20,6 +20,13 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Password is required'],
       minlength: 6,
     },
+    careerProfile: {
+      rawBackgroundText: { type: String, default: '' },
+      parsedExperience: { type: [String], default: [] },
+      baseNsqfScore: { type: Number, min: 1, max: 10, default: null },
+      nsqfJustification: { type: String, default: '' },
+      lastAnalyzedAt: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );
