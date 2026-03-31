@@ -27,22 +27,32 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password });
-    setUser({ _id: data._id, name: data.name, email: data.email });
+    const userData = { _id: data._id, name: data.name, email: data.email, careerProfile: data.careerProfile || {} };
+    setUser(userData);
     setToken(data.token);
     localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify({ _id: data._id, name: data.name, email: data.email }));
+    localStorage.setItem('user', JSON.stringify(userData));
     toast.success(`Welcome back, ${data.name}! 🎉`);
     return data;
   };
 
   const signup = async (name, email, password) => {
     const { data } = await api.post('/auth/signup', { name, email, password });
-    setUser({ _id: data._id, name: data.name, email: data.email });
+    const userData = { _id: data._id, name: data.name, email: data.email, careerProfile: data.careerProfile || {} };
+    setUser(userData);
     setToken(data.token);
     localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify({ _id: data._id, name: data.name, email: data.email }));
+    localStorage.setItem('user', JSON.stringify(userData));
     toast.success(`Account created! Welcome, ${data.name}! 🚀`);
     return data;
+  };
+
+  const updateCareerProfile = (careerProfile) => {
+    setUser((prev) => {
+      const updated = { ...prev, careerProfile };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const logout = () => {
@@ -54,10 +64,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, updateCareerProfile }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export default AuthContext;
+

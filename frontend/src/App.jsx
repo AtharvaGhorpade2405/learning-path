@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Roadmap from './pages/Roadmap';
+import CareerSetup from './pages/CareerSetup';
 
 function App() {
   return (
@@ -28,6 +29,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Roadmap />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/career-setup"
+            element={
+              <ProtectedRoute>
+                <CareerSetup />
               </ProtectedRoute>
             }
           />
