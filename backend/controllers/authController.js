@@ -9,20 +9,29 @@ const generateToken = (id) => {
 // @route   POST /api/auth/signup
 const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({ message: 'User already exists with this email' });
     }
 
-    const user = await User.create({ name, email, password });
+    const existingUsername = await User.findOne({ username: username.toLowerCase() });
+    if (existingUsername) {
+      return res.status(409).json({ message: 'Username is already taken' });
+    }
+
+    const user = await User.create({ name, username: username.toLowerCase(), email, password });
 
     res.status(201).json({
       _id: user._id,
       name: user.name,
+      username: user.username,
       email: user.email,
       careerProfile: user.careerProfile || {},
+      personalStreak: user.personalStreak || 0,
+      lastActiveDate: user.lastActiveDate || null,
+      lastLessonCompletedDate: user.lastLessonCompletedDate || null,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -50,8 +59,12 @@ const login = async (req, res) => {
     res.json({
       _id: user._id,
       name: user.name,
+      username: user.username || null,
       email: user.email,
       careerProfile: user.careerProfile || {},
+      personalStreak: user.personalStreak || 0,
+      lastActiveDate: user.lastActiveDate || null,
+      lastLessonCompletedDate: user.lastLessonCompletedDate || null,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -66,8 +79,12 @@ const getMe = async (req, res) => {
   res.json({
     _id: req.user._id,
     name: req.user.name,
+    username: req.user.username || null,
     email: req.user.email,
     careerProfile: req.user.careerProfile || {},
+    personalStreak: req.user.personalStreak || 0,
+    lastActiveDate: req.user.lastActiveDate || null,
+    lastLessonCompletedDate: req.user.lastLessonCompletedDate || null,
   });
 };
 

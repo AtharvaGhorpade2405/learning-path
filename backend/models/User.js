@@ -8,6 +8,13 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Name is required'],
       trim: true,
     },
+    username: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
+    },
     email: {
       type: String,
       required: [true, 'Email is required'],
@@ -27,6 +34,24 @@ const userSchema = new mongoose.Schema(
       nsqfJustification: { type: String, default: '' },
       lastAnalyzedAt: { type: Date, default: null },
     },
+    personalStreak: { type: Number, default: 0 },
+    lastActiveDate: { type: Date, default: null },
+    lastLessonCompletedDate: { type: Date, default: null },
+    friendRequests: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    ],
+    friends: [
+      {
+        friendId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        streakStatus: {
+          type: String,
+          enum: ['inactive', 'pending_sent', 'pending_received', 'active'],
+          default: 'inactive',
+        },
+        sharedStreakCount: { type: Number, default: 0 },
+        lastStreakIncrementDate: { type: Date, default: null },
+      },
+    ],
   },
   { timestamps: true }
 );
