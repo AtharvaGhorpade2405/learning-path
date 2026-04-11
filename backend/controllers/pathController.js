@@ -92,7 +92,7 @@ Example output format:
           content: `Generate a custom learning path for "${topic}" based on this context: "${currentKnowledge}". It must span exactly ${days} days. Return ONLY valid JSON.`,
         },
       ],
-      model: 'groq/compound',
+      model: 'llama-3.3-70b-versatile',
       max_tokens: 4096,
       response_format: { type: 'json_object' },
     });

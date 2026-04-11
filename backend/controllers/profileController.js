@@ -55,16 +55,16 @@ Return a JSON object with these exact fields:
           content: `Analyze this background and determine my NSQF level:\n\n${backgroundText}`,
         },
       ],
-      model: 'groq/compound',
+      model: 'llama-3.1-8b-instant',
       response_format: { type: 'json_object' },
+      max_tokens: 1024,
     });
-
     const rawContent = chatCompletion.choices[0]?.message?.content;
     if (!rawContent) {
       return res.status(502).json({ message: 'No response from AI model' });
     }
 
-    // Clean up the raw content — groq/compound may return markdown-wrapped JSON
+    // Clean up the raw content in case model returns markdown-wrapped JSON
     let cleanContent = rawContent.trim();
 
     // Strip markdown code fences if present (```json ... ``` or ``` ... ```)

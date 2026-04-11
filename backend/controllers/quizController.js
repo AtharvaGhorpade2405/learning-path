@@ -17,20 +17,22 @@ const generateQuiz = async (req, res) => {
       return res.status(400).json({ message: 'Lesson title is required' });
     }
 
+    // Truncate currentKnowledge to avoid oversized requests
+    const trimmedKnowledge = (currentKnowledge || 'Beginner').slice(0, 500);
+
     const systemPrompt = `You are an expert tutor conducting a quick "Active Recall" micro-quiz. 
 Your goal is to test the user's understanding of a specific lesson.
 
 Lesson Details:
 - Lesson Title: "${lessonTitle}"
 - Surrounding Context (Day Title): "${dayTitle || 'General Concept'}"
-- User Background: "${currentKnowledge || 'Beginner'}"
+- User Background: "${trimmedKnowledge}"
 
 Instructions:
 1. Generate EXACTLY 3 multiple-choice questions testing key concepts from the lesson.
 2. Each question MUST have exactly 4 options.
 3. Precisely one option must be the correct answer.
-4. Use the web search tool for this task if needed.
-5. IMPORTANT: Do not use markdown backticks around the json, and return ONLY the raw JSON array.
+4. IMPORTANT: Do not use markdown backticks around the json, and return ONLY the raw JSON array.
 
 The output MUST be a strict JSON array of 3 objects in the following format:
 [
@@ -49,9 +51,9 @@ The output MUST be a strict JSON array of 3 objects in the following format:
           content: 'Generate the active recall micro-quiz now. Return ONLY valid JSON.',
         },
       ],
-      // Using a fast open-source model available on standard Groq configuration
-      model: 'groq/compound',
+      model: 'llama-3.1-8b-instant',
       response_format: { type: 'json_object' },
+      max_tokens: 1024,
     });
 
     const rawContent = chatCompletion.choices[0]?.message?.content;
