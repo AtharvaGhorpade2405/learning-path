@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 
 const Signup = () => {
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -15,7 +16,7 @@ const Signup = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await signup(name, email, password);
+      await signup(name, username, email, password);
       navigate('/dashboard');
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data?.errors?.[0]?.message || 'Signup failed';
@@ -58,6 +59,25 @@ const Signup = () => {
                 placeholder="Your full name"
                 required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-dark mb-2">Username</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-light/50 font-semibold">@</span>
+                <input
+                  id="signup-username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  className="w-full pl-9 pr-4 py-3 rounded-xl border-2 border-surface-dark bg-surface focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none transition-all duration-200 text-dark placeholder-dark-light/50"
+                  placeholder="cool_learner"
+                  required
+                  minLength={3}
+                  maxLength={20}
+                />
+              </div>
+              <p className="text-xs text-dark-light mt-1">Letters, numbers, and underscores only</p>
             </div>
 
             <div>

@@ -27,7 +27,16 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password });
-    const userData = { _id: data._id, name: data.name, email: data.email, careerProfile: data.careerProfile || {} };
+    const userData = {
+      _id: data._id,
+      name: data.name,
+      username: data.username || null,
+      email: data.email,
+      careerProfile: data.careerProfile || {},
+      personalStreak: data.personalStreak || 0,
+      lastActiveDate: data.lastActiveDate || null,
+      lastLessonCompletedDate: data.lastLessonCompletedDate || null,
+    };
     setUser(userData);
     setToken(data.token);
     localStorage.setItem('token', data.token);
@@ -36,9 +45,18 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const signup = async (name, email, password) => {
-    const { data } = await api.post('/auth/signup', { name, email, password });
-    const userData = { _id: data._id, name: data.name, email: data.email, careerProfile: data.careerProfile || {} };
+  const signup = async (name, username, email, password) => {
+    const { data } = await api.post('/auth/signup', { name, username, email, password });
+    const userData = {
+      _id: data._id,
+      name: data.name,
+      username: data.username,
+      email: data.email,
+      careerProfile: data.careerProfile || {},
+      personalStreak: data.personalStreak || 0,
+      lastActiveDate: data.lastActiveDate || null,
+      lastLessonCompletedDate: data.lastLessonCompletedDate || null,
+    };
     setUser(userData);
     setToken(data.token);
     localStorage.setItem('token', data.token);
@@ -55,6 +73,19 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  const updateStreak = (streakData) => {
+    setUser((prev) => {
+      const updated = {
+        ...prev,
+        personalStreak: streakData.personalStreak,
+        lastActiveDate: streakData.lastActiveDate,
+        lastLessonCompletedDate: streakData.lastLessonCompletedDate,
+      };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -64,11 +95,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, updateCareerProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, updateCareerProfile, updateStreak }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export default AuthContext;
-

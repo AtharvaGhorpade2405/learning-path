@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Flame, Users } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -11,6 +12,14 @@ const Navbar = () => {
   };
 
   const hasNsqf = user?.careerProfile?.baseNsqfScore != null;
+
+  // Check if streak is active today (lesson completed today)
+  const isStreakActiveToday = (() => {
+    if (!user?.lastLessonCompletedDate) return false;
+    const lastActive = new Date(user.lastLessonCompletedDate).toISOString().slice(0, 10);
+    const today = new Date().toISOString().slice(0, 10);
+    return lastActive === today;
+  })();
 
   return (
     <nav className="sticky top-0 z-50 glass border-b border-white/20 bg-white/80">
@@ -49,14 +58,52 @@ const Navbar = () => {
                 </Link>
               )}
 
-              <div className="hidden sm:flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full">
+              {/* Streak Badge */}
+              <Link
+                to="/social"
+                id="streak-badge"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-200 hover:scale-105 ${
+                  isStreakActiveToday
+                    ? 'bg-orange-50 border-orange-200 hover:bg-orange-100'
+                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                <Flame
+                  size={18}
+                  className={`transition-colors duration-200 ${
+                    isStreakActiveToday
+                      ? 'text-orange-500 animate-pulse-soft'
+                      : 'text-gray-400'
+                  }`}
+                  fill={isStreakActiveToday ? 'currentColor' : 'none'}
+                />
+                <span
+                  className={`text-sm font-extrabold ${
+                    isStreakActiveToday ? 'text-orange-600' : 'text-gray-400'
+                  }`}
+                >
+                  {user.personalStreak || 0}
+                </span>
+              </Link>
+
+              {/* Friends Link */}
+              <Link
+                to="/social"
+                id="friends-link"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors"
+              >
+                <Users size={16} className="text-primary" />
+                <span className="text-xs font-bold text-primary">Friends</span>
+              </Link>
+
+              <Link to="/dashboard" className="hidden sm:flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
                 <div className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-sm font-bold">
                   {user.name?.charAt(0).toUpperCase()}
                 </div>
                 <span className="text-sm font-semibold text-dark">
                   {user.name}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10 rounded-xl transition-all duration-200 cursor-pointer"
@@ -72,4 +119,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import QuizModal from './QuizModal';
 import { 
   Code, Database, Globe, PenTool, Layout, Terminal, 
@@ -48,6 +49,7 @@ const playSuccessSound = () => {
 };
 
 const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLast, pathId, onToggle, globalStatus, dayTitle, currentKnowledge }) => {
+  const { updateStreak } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
@@ -79,6 +81,23 @@ const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLa
       if (!lesson.completed) {
         playSuccessSound();
         toast.success(`Lesson completed: "${lesson.title}" 🎉`, { autoClose: 2000 });
+        // Ping activity to update streak (only on completion, not uncomplete)
+        try {
+          const { data: streakData } = await api.post('/user/ping-activity');
+          updateStreak(streakData);
+          
+          if (streakData.streakEvents?.length > 0) {
+            streakData.streakEvents.forEach(event => {
+              if (event.type === 'incremented') {
+                toast.success(`You and @${event.friendUsername} extended your shared streak to ${event.count}! 🔥`);
+              } else if (event.type === 'broken') {
+                toast.error(`Oh no! Your shared streak with @${event.friendUsername} was broken. 💔 You can start a new one!`);
+              }
+            });
+          }
+        } catch (err) {
+          console.error('Streak ping failed:', err);
+        }
       }
       setIsExpanded(false);
     } catch {

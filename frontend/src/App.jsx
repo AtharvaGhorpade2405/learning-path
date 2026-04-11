@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import Roadmap from './pages/Roadmap';
 import CareerSetup from './pages/CareerSetup';
 import Landing from './pages/Landing';
+import Social from './pages/Social';
 
 function App() {
   return (
@@ -42,6 +43,14 @@ function App() {
             }
           />
           <Route path="/" element={<Landing />} />
+          <Route
+            path="/social"
+            element={
+              <ProtectedRoute>
+                <Social />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
