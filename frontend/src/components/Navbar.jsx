@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Flame, Users, Crown, Menu, X } from 'lucide-react';
+import { Flame, Users, Crown, Menu, X, Rocket } from 'lucide-react';
 import { getRankInfo } from '../utils/ranks';
 
 const Navbar = ({ isAuthPage = false }) => {
@@ -31,8 +31,8 @@ const Navbar = ({ isAuthPage = false }) => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group" onClick={() => setIsOpen(false)}>
-            <div className="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-              <span className="text-white text-xl">🚀</span>
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 border-b-[3px] border-primary-dark">
+              <Rocket size={20} className="text-white" />
             </div>
             <span className="text-xl font-bold gradient-text">
               Ascend
