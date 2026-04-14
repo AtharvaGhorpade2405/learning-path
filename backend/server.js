@@ -8,6 +8,7 @@ const quizRoutes = require('./routes/quizRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const socialRoutes = require('./routes/socialRoutes');
 const streakRoutes = require('./routes/streakRoutes');
+const roadmapShareRoutes = require('./routes/roadmapShareRoutes');
 dotenv.config();
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api/quizzes', quizRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/user', streakRoutes);
+app.use('/api/roadmap', roadmapShareRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

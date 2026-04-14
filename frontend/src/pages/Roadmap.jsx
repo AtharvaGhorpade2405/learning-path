@@ -6,8 +6,10 @@ import Navbar from '../components/Navbar';
 import ProgressBar from '../components/ProgressBar';
 import SkillSwitcher from '../components/SkillSwitcher';
 import RoadmapNode from '../components/RoadmapNode';
+import ShareRoadmapModal from '../components/ShareRoadmapModal';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
+import { Share2 } from 'lucide-react';
 
 const Roadmap = () => {
   const { id } = useParams();
@@ -17,6 +19,7 @@ const Roadmap = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const { width, height } = useWindowSize();
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,11 +40,15 @@ const Roadmap = () => {
     fetchData();
   }, [id]);
 
-  const handleToggle = (updatedPath) => {
+  const handleToggle = (updatedData) => {
+    // Determine path from new structured response or fallback to direct path
+    const updatedPath = updatedData.path || updatedData;
+
     // Check if it just became completed
     const wasComplete = path.roadmap?.length > 0 && path.roadmap.every(d => d.lessons.length > 0 && d.lessons.every(l => l.completed));
     const isNowComplete = updatedPath.roadmap?.length > 0 && updatedPath.roadmap.every(d => d.lessons.length > 0 && d.lessons.every(l => l.completed));
-    if (!wasComplete && isNowComplete) {
+    
+    if (updatedData.levelUp || (!wasComplete && isNowComplete)) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 8000);
     }
@@ -106,6 +113,14 @@ const Roadmap = () => {
           <Confetti width={width} height={height} recycle={false} numberOfPieces={500} />
         </div>
       )}
+
+      {/* Share Modal */}
+      <ShareRoadmapModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        roadmapId={path?._id} 
+      />
+
       <Navbar />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 relative">
@@ -135,48 +150,31 @@ const Roadmap = () => {
               {path.topic}
             </h1>
 
-            <div className="flex items-center gap-3 font-bold text-dark-light uppercase tracking-widest text-sm bg-surface-dark px-4 py-2 rounded-full flex-wrap justify-center">
-              <span>{path.days} Day Plan</span>
-              <span className="text-dark opacity-30">|</span>
-              <span>{totalLessons} Lessons</span>
-              {path.startingNsqfLevel && path.targetNsqfLevel && (
-                <>
-                  <span className="text-dark opacity-30">|</span>
-                  <span className="flex items-center gap-1.5 text-accent">
-                    <span>🎯</span>
-                    Lvl {path.startingNsqfLevel} → {path.targetNsqfLevel}
-                  </span>
-                </>
-              )}
-            </div>
-            
             <div className="w-full max-w-lg mt-4">
               <ProgressBar completed={completed} total={total} size="lg" />
             </div>
-
             {isComplete && (
               <div className="mt-2">
                 <div className="text-success-dark font-black text-lg animate-pulse-soft">
                   Path Conquered! 🎉
                 </div>
-                {path.targetNsqfLevel && (
-                  <div className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 animate-slide-up">
-                    <span className="text-lg">⬆️</span>
-                    <span className="text-sm font-black text-accent">
-                      Ready for Level {path.targetNsqfLevel}! Recalculate from Dashboard.
-                    </span>
-                  </div>
-                )}
               </div>
             )}
-
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="mt-4 text-xs font-bold text-danger border-2 border-danger/20 hover:bg-danger/10 px-4 py-2 rounded-xl transition-all cursor-pointer inline-flex items-center gap-2"
-            >
-              {isDeleting ? 'Deleting...' : '🗑 Abandon Path'}
-            </button>
+            <div className="flex gap-2 justify-center mt-4">
+              <button
+                onClick={() => setIsShareModalOpen(true)}
+                className="text-xs font-bold text-accent border-2 border-accent/20 hover:bg-accent/10 px-4 py-2 rounded-xl transition-all cursor-pointer inline-flex items-center gap-2"
+              >
+                <Share2 size={14} /> Share
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="text-xs font-bold text-danger border-2 border-danger/20 hover:bg-danger/10 px-4 py-2 rounded-xl transition-all cursor-pointer inline-flex items-center gap-2"
+              >
+                {isDeleting ? 'Deleting...' : '🗑 Abandon Path'}
+              </button>
+            </div>
           </div>
         </div>
 

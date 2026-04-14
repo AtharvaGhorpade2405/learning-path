@@ -256,14 +256,14 @@ const acceptStreakRequest = async (req, res) => {
 const getFriends = async (req, res) => {
   try {
     const currentUser = await User.findById(req.user._id)
-      .populate('friendRequests', 'name username personalStreak lastActiveDate lastLessonCompletedDate')
+      .populate('friendRequests', 'name username personalStreak lastActiveDate lastLessonCompletedDate totalXP currentLevel')
       .lean();
 
     // Populate friends manually since it's a subdocument array
     const userFriends = currentUser.friends || [];
     const friendIds = userFriends.map((f) => f.friendId);
     const friendDocs = await User.find({ _id: { $in: friendIds } })
-      .select('name username personalStreak lastActiveDate lastLessonCompletedDate')
+      .select('name username personalStreak lastActiveDate lastLessonCompletedDate totalXP currentLevel')
       .lean();
 
     // Merge friend data with streak info
@@ -281,6 +281,8 @@ const getFriends = async (req, res) => {
         streakStatus: f.streakStatus || 'inactive',
         sharedStreakCount: f.sharedStreakCount || 0,
         lastStreakIncrementDate: f.lastStreakIncrementDate || null,
+        totalXP: doc?.totalXP || 0,
+        currentLevel: doc?.currentLevel || 1,
       };
     });
 

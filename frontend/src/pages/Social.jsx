@@ -3,12 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
-import { Flame, UserPlus, Check, X, Users, Handshake, Search, Trophy, ArrowRight } from 'lucide-react';
+import { Flame, UserPlus, Check, X, Users, Handshake, Search, Trophy, Star, Map } from 'lucide-react';
+import { getRankInfo } from '../utils/ranks';
 
 const Social = () => {
   const { user } = useAuth();
   const [friends, setFriends] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [pendingShares, setPendingShares] = useState([]);
   const [searchUsername, setSearchUsername] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -26,8 +28,18 @@ const Social = () => {
     }
   };
 
+  const fetchPendingShares = async () => {
+    try {
+      const { data } = await api.get('/roadmap/shares/pending');
+      setPendingShares(data || []);
+    } catch (err) {
+      console.error('Failed to fetch pending shares:', err);
+    }
+  };
+
   useEffect(() => {
     fetchFriends();
+    fetchPendingShares();
   }, []);
 
   const handleSendRequest = async (e) => {
@@ -99,6 +111,32 @@ const Social = () => {
     }
   };
 
+  const handleAcceptShare = async (shareId) => {
+    setProcessingId(shareId);
+    try {
+      const { data } = await api.post('/roadmap/shares/accept', { shareId });
+      toast.success(data.message || 'Roadmap added to your dashboard!');
+      await fetchPendingShares();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to accept roadmap');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeclineShare = async (shareId) => {
+    setProcessingId(shareId);
+    try {
+      await api.post('/roadmap/shares/reject', { shareId });
+      toast.info('Roadmap invite declined');
+      await fetchPendingShares();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to decline roadmap');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const isActiveToday = (lastActiveDate) => {
     if (!lastActiveDate) return false;
     return new Date(lastActiveDate).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10);
@@ -108,23 +146,61 @@ const Social = () => {
     <div className="min-h-screen bg-surface">
       <Navbar />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-hidden">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-dark flex items-center gap-3">
-            <Users className="text-primary" size={36} />
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-dark flex items-center gap-2 sm:gap-3">
+            <Users className="text-primary" size={28} />
             Friends & Streaks
           </h1>
-          <p className="text-dark-light mt-2 text-lg">
+          <p className="text-dark-light mt-1 sm:mt-2 text-sm sm:text-base md:text-lg">
             Learn together, grow together. Keep those streaks alive! 🔥
           </p>
         </div>
 
+        {/* Incoming Roadmap Invites */}
+        {pendingShares.length > 0 && (
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-lg sm:text-xl font-extrabold text-dark mb-3 sm:mb-4 flex items-center gap-2">
+              <Map size={22} className="text-accent" />
+              Incoming Roadmap Invites
+            </h2>
+            <div className="space-y-3">
+              {pendingShares.map((share) => (
+                <div key={share._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl bg-white border-2 border-accent/20 shadow-md">
+                  <div className="mb-3 sm:mb-0">
+                    <p className="font-bold text-dark text-sm sm:text-base">
+                      <span className="text-accent">@{share.senderId?.username}</span> sent you a roadmap on:
+                    </p>
+                    <p className="font-extrabold text-lg text-dark mt-0.5">{share.roadmapId?.topic}</p>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={() => handleDeclineShare(share._id)}
+                      disabled={processingId === share._id}
+                      className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold text-danger bg-danger/10 hover:bg-danger/20 transition-colors disabled:opacity-50"
+                    >
+                      Decline
+                    </button>
+                    <button
+                      onClick={() => handleAcceptShare(share._id)}
+                      disabled={processingId === share._id}
+                      className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold text-white bg-accent hover:bg-accent-dark transition-colors disabled:opacity-50 shadow-md"
+                    >
+                      Accept
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Your Streak Card */}
-        <div className="mb-8 rounded-2xl bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-2 border-orange-200 p-6 shadow-md">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${
+        <div className="mb-6 sm:mb-8 rounded-2xl bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-2 border-orange-200 p-4 sm:p-6 shadow-md overflow-hidden">
+          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className={`w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-2xl flex items-center justify-center shadow-lg ${
                 isActiveToday(user?.lastActiveDate)
                   ? 'bg-gradient-to-br from-orange-400 to-amber-500'
                   : 'bg-gray-200'
@@ -136,11 +212,11 @@ const Social = () => {
                 />
               </div>
               <div>
-                <p className="text-sm font-bold text-dark-light uppercase tracking-wider">Your Streak</p>
-                <p className="text-4xl font-black text-dark">{user?.personalStreak || 0} <span className="text-lg font-bold text-dark-light">days</span></p>
+                <p className="text-[10px] sm:text-sm font-bold text-dark-light uppercase tracking-wider truncate">Your Streak</p>
+                <p className="text-3xl sm:text-4xl font-black text-dark truncate">{user?.personalStreak || 0} <span className="text-base sm:text-lg font-bold text-dark-light">days</span></p>
               </div>
             </div>
-            <div className={`px-4 py-2 rounded-full text-sm font-bold ${
+            <div className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold shrink-0 ${
               isActiveToday(user?.lastActiveDate)
                 ? 'bg-green-100 text-green-700 border border-green-200'
                 : 'bg-gray-100 text-gray-500 border border-gray-200'
@@ -151,8 +227,8 @@ const Social = () => {
         </div>
 
         {/* Add Friend Section */}
-        <div className="mb-8 rounded-2xl bg-white border-2 border-surface-dark p-6 shadow-md">
-          <h2 className="text-xl font-extrabold text-dark mb-4 flex items-center gap-2">
+        <div className="mb-6 sm:mb-8 rounded-2xl bg-white border-2 border-surface-dark p-4 sm:p-6 shadow-md overflow-hidden">
+          <h2 className="text-lg sm:text-xl font-extrabold text-dark mb-3 sm:mb-4 flex items-center gap-2">
             <UserPlus size={22} className="text-primary" />
             Add a Friend
           </h2>
@@ -164,7 +240,7 @@ const Social = () => {
                 type="text"
                 value={searchUsername}
                 onChange={(e) => setSearchUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                className="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-surface-dark bg-surface focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none transition-all duration-200 text-dark placeholder-dark-light/50"
+                className="w-full pl-10 pr-3 py-2 sm:py-3 rounded-xl border-2 border-surface-dark bg-surface focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none transition-all duration-200 text-dark placeholder-dark-light/50 text-sm sm:text-base"
                 placeholder="Enter username..."
                 maxLength={20}
               />
@@ -172,7 +248,7 @@ const Social = () => {
             <button
               type="submit"
               disabled={isSending || !searchUsername.trim()}
-              className="px-6 py-3 rounded-xl font-bold text-white gradient-bg hover:opacity-90 active:scale-[0.98] transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
+              className="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-bold text-white gradient-bg hover:opacity-90 active:scale-[0.98] transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1 sm:gap-2 text-sm sm:text-base shrink-0"
             >
               {isSending ? (
                 <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -190,9 +266,9 @@ const Social = () => {
 
         {/* Pending Requests */}
         {pendingRequests.length > 0 && (
-          <div className="mb-8 rounded-2xl bg-white border-2 border-secondary/30 p-6 shadow-md">
-            <h2 className="text-xl font-extrabold text-dark mb-4 flex items-center gap-2">
-              <span className="text-2xl">📬</span>
+          <div className="mb-6 sm:mb-8 rounded-2xl bg-white border-2 border-secondary/30 p-4 sm:p-6 shadow-md overflow-hidden">
+            <h2 className="text-lg sm:text-xl font-extrabold text-dark mb-3 sm:mb-4 flex items-center gap-2">
+              <span className="text-xl sm:text-2xl">📬</span>
               Pending Requests
               <span className="ml-2 px-2.5 py-0.5 rounded-full bg-secondary text-white text-xs font-black">
                 {pendingRequests.length}
@@ -202,23 +278,23 @@ const Social = () => {
               {pendingRequests.map((req) => (
                 <div
                   key={req._id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-surface border border-surface-dark hover:shadow-md transition-all duration-200"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 gap-3 sm:gap-0 rounded-xl bg-surface border border-surface-dark hover:shadow-md transition-all duration-200 min-w-0"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full gradient-bg flex items-center justify-center text-white text-sm font-bold">
+                  <div className="flex items-center gap-3 min-w-0 max-w-full">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-full gradient-bg flex items-center justify-center text-white text-xs sm:text-sm font-bold">
                       {req.name?.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="font-bold text-dark">{req.name}</p>
-                      <p className="text-xs text-dark-light">@{req.username}</p>
+                    <div className="min-w-0 truncate">
+                      <p className="font-bold text-dark text-sm sm:text-base truncate">{req.name}</p>
+                      <p className="text-xs text-dark-light truncate">@{req.username}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                     <button
                       id={`accept-${req._id}`}
                       onClick={() => handleAccept(req._id)}
                       disabled={processingId === req._id}
-                      className="px-4 py-2 rounded-xl font-bold text-white bg-success border-b-4 border-success-dark hover:brightness-110 active:border-b-0 active:translate-y-1 transition-all duration-100 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                      className="flex-1 sm:flex-none justify-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl font-bold text-white bg-success border-b-4 border-success-dark hover:brightness-110 active:border-b-0 active:translate-y-1 transition-all duration-100 cursor-pointer disabled:opacity-50 flex items-center gap-1.5 text-xs sm:text-sm"
                     >
                       <Check size={16} />
                       Accept
@@ -227,7 +303,7 @@ const Social = () => {
                       id={`decline-${req._id}`}
                       onClick={() => handleDecline(req._id)}
                       disabled={processingId === req._id}
-                      className="px-4 py-2 rounded-xl font-bold text-dark-light border-2 border-surface-dark hover:bg-surface-dark/50 transition-all duration-200 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                      className="flex-1 sm:flex-none justify-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl font-bold text-dark-light border-2 border-surface-dark hover:bg-surface-dark/50 transition-all duration-200 cursor-pointer disabled:opacity-50 flex items-center gap-1.5 text-xs sm:text-sm"
                     >
                       <X size={16} />
                       Decline
@@ -240,8 +316,8 @@ const Social = () => {
         )}
 
         {/* Friends Leaderboard */}
-        <div className="rounded-2xl bg-white border-2 border-surface-dark p-6 shadow-md">
-          <h2 className="text-xl font-extrabold text-dark mb-6 flex items-center gap-2">
+        <div className="rounded-2xl bg-white border-2 border-surface-dark p-4 sm:p-6 shadow-md overflow-hidden">
+          <h2 className="text-lg sm:text-xl font-extrabold text-dark mb-4 sm:mb-6 flex items-center gap-2">
             <Trophy size={22} className="text-secondary" />
             Friends Leaderboard
           </h2>
@@ -268,11 +344,11 @@ const Social = () => {
               {friends.map((friend, index) => (
                 <div
                   key={friend._id}
-                  className="flex items-center justify-between p-4 rounded-2xl bg-surface border-2 border-surface-dark hover:border-primary/30 hover:shadow-lg transition-all duration-300 group"
+                  className="flex items-center p-2.5 sm:p-4 gap-2 sm:gap-4 rounded-2xl bg-surface border-2 border-surface-dark hover:border-primary/30 hover:shadow-lg transition-all duration-300 group overflow-hidden"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                     {/* Rank Badge */}
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black ${
+                    <div className={`shrink-0 w-5 h-5 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-sm font-black ${
                       index === 0
                         ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300'
                         : index === 1
@@ -285,26 +361,41 @@ const Social = () => {
                     </div>
 
                     {/* Avatar */}
-                    <div className="w-12 h-12 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-lg group-hover:scale-110 transition-transform duration-300">
+                    <div className="shrink-0 w-8 h-8 sm:w-12 sm:h-12 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-sm sm:text-lg group-hover:scale-110 transition-transform duration-300">
                       {friend.name?.charAt(0).toUpperCase()}
                     </div>
 
                     {/* Info */}
-                    <div>
-                      <p className="font-bold text-dark">{friend.name}</p>
-                      <p className="text-xs text-dark-light">@{friend.username}</p>
+                    <div className="min-w-0 flex-1 flex flex-col justify-center">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-dark text-sm sm:text-base truncate" title={friend.name}>{friend.name}</p>
+                        {friend.totalXP > 0 && (
+                          <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-yellow-100 text-yellow-800 text-[10px] font-bold shrink-0">
+                            <Star size={10} fill="currentColor" />
+                            {getRankInfo(friend.totalXP).name}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-dark-light truncate" title={`@${friend.username}`}>@{friend.username}</p>
+                        {friend.totalXP > 0 && (
+                          <span className="sm:hidden inline-flex items-center gap-1 text-[10px] text-yellow-600 font-bold shrink-0 opacity-80">
+                            • {getRankInfo(friend.totalXP).name}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
                     {/* Personal Streak */}
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-200">
+                    <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-orange-50 border border-orange-200 shrink-0">
                       <Flame
-                        size={16}
-                        className={isActiveToday(friend.lastActiveDate) ? 'text-orange-500' : 'text-gray-400'}
+                        size={14}
+                        className={`sm:w-4 sm:h-4 ${isActiveToday(friend.lastActiveDate) ? 'text-orange-500' : 'text-gray-400'}`}
                         fill={isActiveToday(friend.lastActiveDate) ? 'currentColor' : 'none'}
                       />
-                      <span className={`text-sm font-extrabold ${
+                      <span className={`text-xs sm:text-sm font-extrabold ${
                         isActiveToday(friend.lastActiveDate) ? 'text-orange-600' : 'text-gray-400'
                       }`}>
                         {friend.personalStreak || 0}
@@ -312,11 +403,11 @@ const Social = () => {
                     </div>
 
                     {/* Shared Streak States */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                       {friend.streakStatus === 'active' && (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200" title="Active shared streak">
-                          <Handshake size={16} className="text-accent" />
-                          <span className="text-sm font-extrabold text-accent">
+                        <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-purple-50 border border-purple-200" title="Active shared streak">
+                          <Handshake size={14} className="text-accent sm:w-4 sm:h-4 w-3.5 h-3.5" />
+                          <span className="text-xs sm:text-sm font-extrabold text-accent">
                             {friend.sharedStreakCount || 0}
                           </span>
                         </div>
@@ -326,15 +417,16 @@ const Social = () => {
                         <button
                           onClick={() => handleSendStreakRequest(friend._id)}
                           disabled={processingId === friend._id}
-                          className="px-3 py-1.5 rounded-full text-xs font-bold text-accent bg-accent/10 border border-accent/20 hover:bg-accent/20 transition-all duration-200 disabled:opacity-50"
+                          className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold text-accent bg-accent/10 border border-accent/20 hover:bg-accent/20 transition-all duration-200 disabled:opacity-50 min-w-max"
                         >
-                          Start Streak 🔥
+                          <span className="hidden sm:inline">Start Streak 🔥</span>
+                          <span className="sm:hidden">Start 🔥</span>
                         </button>
                       )}
 
                       {friend.streakStatus === 'pending_sent' && (
-                        <span className="px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 bg-gray-100 border border-gray-200">
-                          Streak Requested
+                        <span className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold text-gray-500 bg-gray-100 border border-gray-200 min-w-max">
+                          Requested
                         </span>
                       )}
 
@@ -342,9 +434,9 @@ const Social = () => {
                         <button
                           onClick={() => handleAcceptStreakRequest(friend._id)}
                           disabled={processingId === friend._id}
-                          className="px-3 py-1.5 rounded-full text-xs font-bold text-white bg-accent hover:bg-accent-dark transition-all duration-200 disabled:opacity-50 animate-pulse-soft"
+                          className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold text-white bg-accent hover:bg-accent-dark transition-all duration-200 disabled:opacity-50 animate-pulse-soft min-w-max"
                         >
-                          Accept Streak!
+                          Accept!
                         </button>
                       )}
                     </div>
