@@ -31,7 +31,7 @@ const llmOutputSchema = z.array(
         resources: z.array(
           z.object({
             title: z.string().min(1),
-            url: z.string().url().min(1),
+            searchQuery: z.string().min(1),
           })
         ).min(1).max(3),
       })
