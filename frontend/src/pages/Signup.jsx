@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import Navbar from '../components/Navbar';
 
 const Signup = () => {
   const [name, setName] = useState('');
@@ -36,8 +37,13 @@ const Signup = () => {
         <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '0.5s' }}></div>
       </div>
 
+      {/* Navbar at top */}
+      <div className="absolute top-0 left-0 right-0 z-50">
+        <Navbar isAuthPage={true} />
+      </div>
+
       {/* Card */}
-      <div className="relative z-10 w-full max-w-md animate-slide-up">
+      <div className="relative z-10 w-full max-w-md animate-slide-up mt-16">
         <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50">
           {/* Header */}
           <div className="text-center mb-8">
