@@ -6,13 +6,13 @@ import api from '../utils/api';
 import Navbar from '../components/Navbar';
 import SkillCard from '../components/SkillCard';
 import NewSkillModal from '../components/NewSkillModal';
+import { getRankInfo } from '../utils/ranks';
 
 const Dashboard = () => {
   const { user, updateCareerProfile } = useAuth();
   const [paths, setPaths] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [isRecalculating, setIsRecalculating] = useState(false);
 
   const hasCareerProfile = user?.careerProfile?.baseNsqfScore != null;
 
@@ -35,26 +35,6 @@ const Dashboard = () => {
     setPaths((prev) => [newPath, ...prev]);
   };
 
-  const handleRecalculate = async () => {
-    setIsRecalculating(true);
-    try {
-      const { data } = await api.post('/profile/recalculate');
-      toast.success(data.message);
-      if (data.baseNsqfScore != null) {
-        updateCareerProfile({
-          ...user.careerProfile,
-          baseNsqfScore: data.baseNsqfScore,
-        });
-      }
-      // Refresh paths to get updated skillNsqfLevels
-      await fetchPaths();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to recalculate');
-    } finally {
-      setIsRecalculating(false);
-    }
-  };
-
   const totalDays = paths.reduce((sum, p) => sum + (p.roadmap?.length || 0), 0);
   const completedDays = paths.reduce((sum, p) => {
     if (!p.roadmap) return sum;
@@ -62,10 +42,16 @@ const Dashboard = () => {
     return sum + completedInPath;
   }, 0);
 
-  // Check if any paths are fully complete (for showing recalculate button)
-  const hasCompletedPaths = paths.some(
-    (p) => p.roadmap?.length > 0 && p.roadmap.every((d) => d.lessons.length > 0 && d.lessons.every((l) => l.completed))
-  );
+
+  const rankInfo = user ? getRankInfo(user.totalXP || 0) : null;
+  const currentXP = user?.totalXP || 0;
+  const nextTarget = rankInfo?.nextRankMinXp || currentXP;
+  const currentTarget = rankInfo?.minXp || 0;
+  
+  // Prevent division by zero if apex
+  const progressPercent = rankInfo?.nextRankName 
+    ? Math.min(100, Math.max(0, ((currentXP - currentTarget) / (nextTarget - currentTarget)) * 100))
+    : 100;
 
   return (
     <div className="min-h-screen bg-surface">
@@ -117,18 +103,7 @@ const Dashboard = () => {
 
         {/* Stats Row */}
         {paths.length > 0 && (
-          <div className={`grid ${hasCareerProfile ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'} gap-4 mb-10`}>
-            {hasCareerProfile && (
-              <div className="rounded-3xl p-4 sm:p-5 border-b-[6px] transition-transform hover:-translate-y-1 flex flex-col items-center justify-center text-center bg-accent border-accent-light text-white">
-                <span className="text-3xl sm:text-4xl mb-1 drop-shadow-sm">🎯</span>
-                <p className="text-3xl sm:text-4xl font-extrabold drop-shadow-sm pt-1">
-                  {user.careerProfile.baseNsqfScore}
-                </p>
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest opacity-80 mt-1">
-                  NSQF Level
-                </span>
-              </div>
-            )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
             {[
               { label: 'Worlds', value: paths.length, emoji: '🌎', color: 'bg-primary border-primary-dark text-white' },
               { label: 'Total Days', value: totalDays, emoji: '📅', color: 'bg-secondary border-secondary-dark text-white' },
@@ -144,6 +119,31 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Next Rank Progress Bar */}
+        {rankInfo && rankInfo.nextRankName && (
+          <div className="mb-10 p-5 sm:p-6 bg-white border border-gray-200 rounded-3xl shadow-sm">
+            <div className="flex justify-between items-end mb-2">
+              <div>
+                <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Next Rank</p>
+                <h3 className="text-xl font-extrabold text-dark tracking-tight">{rankInfo.nextRankName}</h3>
+              </div>
+              <div className="text-right">
+                <span className="text-lg font-black text-dark">{currentXP}</span>
+                <span className="text-sm font-bold text-gray-400"> / {nextTarget} XP</span>
+              </div>
+            </div>
+            <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden mt-3 shadow-inner">
+              <div 
+                className="h-full bg-yellow-400 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <p className="text-right text-xs font-bold text-yellow-600 mt-2">
+              {nextTarget - currentXP} XP to go!
+            </p>
+          </div>
+        )}
+
         {/* Action Buttons Row */}
         <div className="flex flex-wrap gap-4 mb-10">
           <button
@@ -153,30 +153,6 @@ const Dashboard = () => {
             <span className="text-2xl">✨</span>
             Unlock New World
           </button>
-
-          {hasCareerProfile && hasCompletedPaths && (
-            <button
-              onClick={handleRecalculate}
-              disabled={isRecalculating}
-              id="recalculate-nsqf-button"
-              className="px-6 py-4 rounded-full font-bold text-accent border-2 border-accent/30 hover:bg-accent/10 transition-all duration-200 flex items-center justify-center gap-2 text-base cursor-pointer disabled:opacity-50"
-            >
-              {isRecalculating ? (
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Recalculating...
-                </span>
-              ) : (
-                <>
-                  <span>📊</span>
-                  Recalculate NSQF Levels
-                </>
-              )}
-            </button>
-          )}
         </div>
 
         {/* Skills Grid */}
