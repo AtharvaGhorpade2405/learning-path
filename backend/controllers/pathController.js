@@ -2,6 +2,7 @@ const Groq = require('groq-sdk');
 const LearningPath = require('../models/LearningPath');
 const User = require('../models/User');
 const { llmOutputSchema } = require('../validators/pathSchemas');
+const { fetchResourceUrls } = require('../utils/youtubeSearch');
 
 let _groq;
 function getGroq() {
@@ -61,7 +62,7 @@ Each lesson object must have:
 
 Each resource object MUST HAVE:
 - "title": The name of the resource
-- "url": A REAL, valid URL to the resource (e.g., https://developer.mozilla.org...). Suggest free resources only and make sure that the URLs you provide are valid and do not return a 404 error. Use the web search tool for this task.
+- "searchQuery": A highly specific search query string to find a tutorial about this topic on YouTube (e.g., "React 18 fundamentals full tutorial"). DO NOT generate hardcoded URLs for resources.
 
 Return ONLY a valid JSON object. No markdown, no explanation
 
@@ -76,7 +77,7 @@ Example output format:
           "title": "Learn HTML Basics",
           "description": "Understand the structure of HTML documents.",
           "resources": [
-            { "title": "MDN HTML Guide", "url": "https://developer.mozilla.org/en-US/docs/Web/HTML" }
+            { "title": "MDN HTML Guide", "searchQuery": "HTML basics for beginners full course" }
           ]
         }
       ]
@@ -92,10 +93,12 @@ Example output format:
           content: `Generate a custom learning path for "${topic}" based on this context: "${currentKnowledge}". It must span exactly ${days} days. Return ONLY valid JSON.`,
         },
       ],
-      model: 'llama-3.3-70b-versatile',
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       max_tokens: 4096,
       response_format: { type: 'json_object' },
     });
+
+    console.log('Groq Token Usage:', chatCompletion.usage);
 
     const rawContent = chatCompletion.choices[0]?.message?.content;
     if (!rawContent) {
@@ -140,6 +143,9 @@ Example output format:
       });
     }
 
+    // Step A, B, C: Intercept and fetch actual URLs
+    const roadmapWithUrls = await fetchResourceUrls(validation.data);
+
     // Save to database
     const learningPath = await LearningPath.create({
       user: req.user._id,
@@ -149,7 +155,7 @@ Example output format:
       startingNsqfLevel,
       targetNsqfLevel,
       skillNsqfLevel: startingNsqfLevel, // Initialize at starting level
-      roadmap: validation.data.map((dayObj) => ({
+      roadmap: roadmapWithUrls.map((dayObj) => ({
         day: dayObj.day,
         title: dayObj.title,
         lessons: dayObj.lessons.map((lesson) => ({
