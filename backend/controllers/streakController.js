@@ -1,27 +1,14 @@
 const User = require('../models/User');
+const { processXP } = require('../utils/ranks');
 
 /**
  * Normalize a Date to midnight UTC for day-level comparison.
  */
-const toUTCDay = (date) => {
+const normalizeToMidnight = (date) => {
+  if (!date) return null;
   const d = new Date(date);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-};
-
-/**
- * Check if two dates are on the same UTC day.
- */
-const isSameDay = (d1, d2) => {
-  return toUTCDay(d1).getTime() === toUTCDay(d2).getTime();
-};
-
-/**
- * Check if d1 is exactly 1 day before d2 (UTC).
- */
-const isYesterday = (d1, d2) => {
-  const day1 = toUTCDay(d1).getTime();
-  const day2 = toUTCDay(d2).getTime();
-  return day2 - day1 === 24 * 60 * 60 * 1000;
+  d.setUTCHours(0, 0, 0, 0);
+  return d.getTime();
 };
 
 // @desc    Ping daily activity — updates personal & shared streaks
@@ -29,30 +16,40 @@ const isYesterday = (d1, d2) => {
 const pingActivity = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    const today = new Date();
-    const streakEvents = []; // Track streak events for frontend notifications
 
-    // Capture previous date to accurately calculate breaks
-    const previousUserLastLessonDate = user.lastLessonCompletedDate;
+    const now = new Date();
+    const todayMidnight = normalizeToMidnight(now);
+    const yesterdayMidnight = todayMidnight - 24 * 60 * 60 * 1000;
 
-    // --- Personal Streak Logic ---
-    if (previousUserLastLessonDate && isSameDay(previousUserLastLessonDate, today)) {
-      // Already completed a lesson today — idempotent for personal streak
-      // But still process shared streaks (friend may have completed since last ping)
-    } else {
-      // First lesson completion of the day
-      if (previousUserLastLessonDate && isYesterday(previousUserLastLessonDate, today)) {
-        // Consecutive day — increment streak
-        user.personalStreak += 1;
-      } else {
-        // First time or gap > 1 day — reset to 1
-        user.personalStreak = 1;
-      }
+    const streakEvents = [];
+    let xpAwarded = 0;
+    let levelUp = false;
+    let newRankName = null;
+
+    // Check if it's the first login today based on lastActiveDate
+    const userLastActive = normalizeToMidnight(user.lastActiveDate);
+    if (userLastActive !== todayMidnight) {
+       const xpResult = processXP(user, 10);
+       xpAwarded = 10;
+       levelUp = xpResult.levelUp;
+       newRankName = xpResult.newRankName;
     }
 
-    // Always update these on lesson completion
-    user.lastLessonCompletedDate = today;
-    user.lastActiveDate = today;
+    const userLastLesson = normalizeToMidnight(user.lastLessonCompletedDate);
+
+    // --- Personal Streak Logic ---
+    if (userLastLesson === todayMidnight) {
+      // Check 1: Already completed a lesson today. DO NOT increment, DO NOT break.
+    } else if (userLastLesson === yesterdayMidnight) {
+      // Check 2: Consecutive day completed
+      user.personalStreak += 1;
+    } else {
+      // Check 3: Missed a day or first time
+      user.personalStreak = 1;
+    }
+
+    user.lastLessonCompletedDate = now;
+    user.lastActiveDate = now;
 
     // --- Shared Streak Logic ---
     const activeFriends = (user.friends || []).filter(
@@ -65,76 +62,57 @@ const pingActivity = async (req, res) => {
         'lastLessonCompletedDate friends username'
       );
 
+      const promises = [];
+
       for (const friendEntry of activeFriends) {
         const friendDoc = friendDocs.find(
           (d) => d._id.toString() === friendEntry.friendId.toString()
         );
         if (!friendDoc) continue;
 
-        // Find the mirror entry on friend's side
         const mirrorEntry = (friendDoc.friends || []).find(
           (f) => f.friendId.toString() === user._id.toString()
         );
         if (!mirrorEntry) continue;
 
-        // --- Check for Breaks ---
-        // A streak breaks if established (count > 0) AND EITHER user failed to complete a lesson yesterday.
-        // We use previousUserLastLessonDate because we just updated user.lastLessonCompletedDate to 'today'.
-        const userCompletedYesterdayOrToday =
-          previousUserLastLessonDate &&
-          (isSameDay(previousUserLastLessonDate, today) || isYesterday(previousUserLastLessonDate, today));
+        const friendLastLesson = normalizeToMidnight(friendDoc.lastLessonCompletedDate);
+        const lastStreakIncrement = normalizeToMidnight(friendEntry.lastStreakIncrementDate);
 
-        const friendCompletedYesterdayOrToday =
-          friendDoc.lastLessonCompletedDate &&
-          (isSameDay(friendDoc.lastLessonCompletedDate, today) || isYesterday(friendDoc.lastLessonCompletedDate, today));
-
-        if (friendEntry.sharedStreakCount > 0) {
-          const userMissed = !userCompletedYesterdayOrToday;
-          const friendMissed = !friendCompletedYesterdayOrToday;
-
-          // Only break if someone genuinely missed a day
-          if (userMissed || friendMissed) {
-            friendEntry.streakStatus = 'inactive';
-            friendEntry.sharedStreakCount = 0;
-            friendEntry.lastStreakIncrementDate = null;
-
-            mirrorEntry.streakStatus = 'inactive';
-            mirrorEntry.sharedStreakCount = 0;
-            mirrorEntry.lastStreakIncrementDate = null;
-
-            friendDoc.markModified('friends');
-            await friendDoc.save();
-            user.markModified('friends');
-
-            streakEvents.push({
-              type: 'broken',
-              friendUsername: friendDoc.username,
-            });
-            continue;
-          }
+        // Check 1 (Already incremented today)
+        if (lastStreakIncrement === todayMidnight) {
+          continue; // The streak was already updated today.
         }
 
-        // --- Check for Increments ---
-        // Both users must have completed a lesson TODAY
-        const friendCompletedToday =
-          friendDoc.lastLessonCompletedDate &&
-          isSameDay(friendDoc.lastLessonCompletedDate, today);
+        // Check 2 (Break Condition)
+        if (friendLastLesson === null || friendLastLesson < yesterdayMidnight) {
+          friendEntry.streakStatus = 'inactive';
+          friendEntry.sharedStreakCount = 0;
+          friendEntry.lastStreakIncrementDate = null;
 
-        const alreadyIncrementedToday =
-          friendEntry.lastStreakIncrementDate &&
-          isSameDay(friendEntry.lastStreakIncrementDate, today);
-
-        if (friendCompletedToday && !alreadyIncrementedToday) {
-          // Both users completed today and haven't incremented yet — increment!
-          friendEntry.sharedStreakCount = (friendEntry.sharedStreakCount || 0) + 1;
-          friendEntry.lastStreakIncrementDate = today;
-
-          mirrorEntry.sharedStreakCount = (mirrorEntry.sharedStreakCount || 0) + 1;
-          mirrorEntry.lastStreakIncrementDate = today;
+          mirrorEntry.streakStatus = 'inactive';
+          mirrorEntry.sharedStreakCount = 0;
+          mirrorEntry.lastStreakIncrementDate = null;
 
           friendDoc.markModified('friends');
-          await friendDoc.save();
-          user.markModified('friends');
+          promises.push(friendDoc.save());
+
+          streakEvents.push({
+            type: 'broken',
+            friendUsername: friendDoc.username,
+          });
+          continue;
+        }
+
+        // Check 3 (Increment Condition)
+        if (friendLastLesson === todayMidnight) {
+          friendEntry.sharedStreakCount = (friendEntry.sharedStreakCount || 0) + 1;
+          friendEntry.lastStreakIncrementDate = now;
+
+          mirrorEntry.sharedStreakCount = (mirrorEntry.sharedStreakCount || 0) + 1;
+          mirrorEntry.lastStreakIncrementDate = now;
+
+          friendDoc.markModified('friends');
+          promises.push(friendDoc.save());
 
           streakEvents.push({
             type: 'incremented',
@@ -143,6 +121,9 @@ const pingActivity = async (req, res) => {
           });
         }
       }
+
+      user.markModified('friends');
+      await Promise.all(promises);
     }
 
     await user.save();
@@ -152,6 +133,11 @@ const pingActivity = async (req, res) => {
       lastActiveDate: user.lastActiveDate,
       lastLessonCompletedDate: user.lastLessonCompletedDate,
       streakEvents,
+      xpAwarded,
+      levelUp,
+      newRankName,
+      totalXP: user.totalXP,
+      currentLevel: user.currentLevel,
       message: 'Activity logged!',
     });
   } catch (error) {
