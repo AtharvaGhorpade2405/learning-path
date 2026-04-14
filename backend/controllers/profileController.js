@@ -55,7 +55,7 @@ Return a JSON object with these exact fields:
           content: `Analyze this background and determine my NSQF level:\n\n${backgroundText}`,
         },
       ],
-      model: 'llama-3.1-8b-instant',
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       response_format: { type: 'json_object' },
       max_tokens: 1024,
     });
