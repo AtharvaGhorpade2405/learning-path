@@ -37,6 +37,8 @@ const userSchema = new mongoose.Schema(
     personalStreak: { type: Number, default: 0 },
     lastActiveDate: { type: Date, default: null },
     lastLessonCompletedDate: { type: Date, default: null },
+    totalXP: { type: Number, default: 0 },
+    currentLevel: { type: Number, default: 1 },
     friendRequests: [
       { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     ],

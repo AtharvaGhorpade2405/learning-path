@@ -32,6 +32,8 @@ const signup = async (req, res) => {
       personalStreak: user.personalStreak || 0,
       lastActiveDate: user.lastActiveDate || null,
       lastLessonCompletedDate: user.lastLessonCompletedDate || null,
+      totalXP: user.totalXP || 0,
+      currentLevel: user.currentLevel || 1,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -65,6 +67,8 @@ const login = async (req, res) => {
       personalStreak: user.personalStreak || 0,
       lastActiveDate: user.lastActiveDate || null,
       lastLessonCompletedDate: user.lastLessonCompletedDate || null,
+      totalXP: user.totalXP || 0,
+      currentLevel: user.currentLevel || 1,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -85,6 +89,8 @@ const getMe = async (req, res) => {
     personalStreak: req.user.personalStreak || 0,
     lastActiveDate: req.user.lastActiveDate || null,
     lastLessonCompletedDate: req.user.lastLessonCompletedDate || null,
+    totalXP: req.user.totalXP || 0,
+    currentLevel: req.user.currentLevel || 1,
   });
 };
 

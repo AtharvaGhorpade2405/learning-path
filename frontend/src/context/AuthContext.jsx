@@ -36,6 +36,8 @@ export const AuthProvider = ({ children }) => {
       personalStreak: data.personalStreak || 0,
       lastActiveDate: data.lastActiveDate || null,
       lastLessonCompletedDate: data.lastLessonCompletedDate || null,
+      totalXP: data.totalXP || 0,
+      currentLevel: data.currentLevel || 1,
     };
     setUser(userData);
     setToken(data.token);
@@ -56,6 +58,8 @@ export const AuthProvider = ({ children }) => {
       personalStreak: data.personalStreak || 0,
       lastActiveDate: data.lastActiveDate || null,
       lastLessonCompletedDate: data.lastLessonCompletedDate || null,
+      totalXP: data.totalXP || 0,
+      currentLevel: data.currentLevel || 1,
     };
     setUser(userData);
     setToken(data.token);
@@ -86,6 +90,19 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  const updateXP = (xpData) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = {
+        ...prev,
+        totalXP: xpData.totalXP !== undefined ? xpData.totalXP : prev.totalXP,
+        currentLevel: xpData.currentLevel !== undefined ? xpData.currentLevel : prev.currentLevel,
+      };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -95,7 +112,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, updateCareerProfile, updateStreak }}>
+    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, updateCareerProfile, updateStreak, updateXP }}>
       {children}
     </AuthContext.Provider>
   );

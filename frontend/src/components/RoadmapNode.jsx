@@ -49,7 +49,7 @@ const playSuccessSound = () => {
 };
 
 const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLast, pathId, onToggle, globalStatus, dayTitle, currentKnowledge }) => {
-  const { updateStreak } = useAuth();
+  const { updateStreak, updateXP } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
@@ -78,14 +78,33 @@ const RoadmapNode = ({ lesson, dayIndex, lessonIndex, globalIndex, isFirst, isLa
     try {
       const { data } = await api.patch(`/paths/${pathId}/days/${dayIndex}/lessons/${lessonIndex}`);
       onToggle(data);
+
+      if (data.totalXP !== undefined) {
+        updateXP({ totalXP: data.totalXP, currentLevel: data.currentLevel });
+      }
+
       if (!lesson.completed) {
         playSuccessSound();
-        toast.success(`Lesson completed: "${lesson.title}" 🎉`, { autoClose: 2000 });
+        if (data.levelUp) {
+          toast.success(`🎉 Level Up! You have reached the rank of ${data.newRankName}!`, { autoClose: 5000 });
+        } else {
+          toast.success(`Lesson completed: "${lesson.title}" 🎉 (+${data.xpAwarded} XP)`, { autoClose: 2000 });
+        }
         // Ping activity to update streak (only on completion, not uncomplete)
         try {
           const { data: streakData } = await api.post('/user/ping-activity');
           updateStreak(streakData);
           
+          if (streakData.totalXP !== undefined) {
+            updateXP({ totalXP: streakData.totalXP, currentLevel: streakData.currentLevel });
+          }
+          if (streakData.levelUp) {
+            toast.success(`🎉 Level Up! You have reached the rank of ${streakData.newRankName}!`, { autoClose: 5000 });
+            onToggle({ path: data.path, levelUp: true }); // propagate confetti
+          } else if (streakData.xpAwarded > 0) {
+            toast.success(`Daily Login Bonus! +${streakData.xpAwarded} XP`, { autoClose: 2000 });
+          }
+
           if (streakData.streakEvents?.length > 0) {
             streakData.streakEvents.forEach(event => {
               if (event.type === 'incremented') {

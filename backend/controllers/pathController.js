@@ -3,6 +3,7 @@ const LearningPath = require('../models/LearningPath');
 const User = require('../models/User');
 const { llmOutputSchema } = require('../validators/pathSchemas');
 const { fetchResourceUrls } = require('../utils/youtubeSearch');
+const { processXP } = require('../utils/ranks');
 
 let _groq;
 function getGroq() {
@@ -237,9 +238,35 @@ const toggleLessonComplete = async (req, res) => {
     }
 
     targetDay.lessons[lIdx].completed = !targetDay.lessons[lIdx].completed;
+    
+    let xpAwarded = 0;
+    let levelUp = false;
+    let newRankName = null;
+    let totalXP = undefined;
+    let currentLevel = undefined;
+
+    // Only award XP if we just completed it (not if toggled off, though UI doesn't really allow typical toggle-offs easily unless intended)
+    if (targetDay.lessons[lIdx].completed) {
+      const userDoc = await User.findById(req.user._id);
+      const xpResult = processXP(userDoc, 50);
+      xpAwarded = 50;
+      levelUp = xpResult.levelUp;
+      newRankName = xpResult.newRankName;
+      totalXP = userDoc.totalXP;
+      currentLevel = userDoc.currentLevel;
+      await userDoc.save();
+    }
+
     await path.save();
 
-    res.json(path);
+    res.json({
+      path,
+      xpAwarded,
+      levelUp,
+      newRankName,
+      totalXP,
+      currentLevel
+    });
   } catch (error) {
     console.error('Toggle lesson error:', error);
     res.status(500).json({ message: 'Failed to update lesson' });
